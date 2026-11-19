@@ -192,7 +192,9 @@
 		var rec = h('div'); p.appendChild(h('h2', { class: 'st-h2' }, 'Recent projects')); p.appendChild(rec);
 		loadProjects().then(function (list) {
 			if (!list.length) { rec.appendChild(h('div', { class: 'st-empty' }, 'No projects yet. Your lesson work and your own websites will appear here.')); return; }
-			rec.appendChild(projectGrid(list.slice(0, 4)));
+			var real = list.filter(function (x) { return !isLabWork(x); });
+			if (!real.length) { rec.appendChild(h('div', { class: 'st-empty' }, 'No websites yet. Start one from Projects, or practise in the Design Lab.')); return; }
+			rec.appendChild(projectGrid(real.slice(0, 4)));
 		}).catch(function () { rec.appendChild(h('div', { class: 'st-empty' }, 'Projects will load when you are online.')); });
 		shell('home', p);
 	}
@@ -525,6 +527,8 @@
 		return api('projects').then(function (l) { state.projects = l; store.set('projects', l); return l; })
 			.catch(function (e) { var c = store.get('projects'); if (c) return c; throw e; });
 	}
+	/* Design Lab practice and saved parts are kept apart from real websites. */
+	function isLabWork(pr) { return /^lab-.*-(g|p)$/.test(pr.lesson || '') || /^part-/.test(pr.lesson || ''); }
 	function projectGrid(list) {
 		var g = h('div', { class: 'st-grid' });
 		list.forEach(function (pr) {
@@ -543,14 +547,24 @@
 		loadProjects(true).then(function (list) {
 			box.innerHTML = '';
 			if (!list.length) { box.appendChild(h('div', { class: 'st-empty big' }, '<b>No projects yet</b><p>Start with the builder for a full website, or use code to practise HTML and CSS.</p>')); return; }
-			box.appendChild(projectGrid(list));
+			var real = list.filter(function (x) { return !isLabWork(x); }), lab = list.filter(isLabWork);
+			if (real.length) box.appendChild(projectGrid(real));
+			else box.appendChild(h('div', { class: 'st-empty' }, 'No websites yet. Tap <b>+ New project</b> to start one.'));
+			if (lab.length) {
+				var dt = h('details', { class: 'st-labwork' });
+				dt.appendChild(h('summary', null, 'Design Lab practice and saved parts (' + lab.length + ')'));
+				dt.appendChild(projectGrid(lab));
+				box.appendChild(dt);
+			}
 		}).catch(function (e) { box.innerHTML = '<div class="st-empty">' + esc(e.message) + '</div>'; });
 	}
 	function newProjectModal() {
 		var f = h('div', { class: 'st-choose' });
 		var title = h('input', { type: 'text', value: '', placeholder: 'e.g. Mama Njeri\'s Kitchen', 'aria-label': 'Project name' });
 		f.appendChild(h('label', { class: 'st-field' }, [h('span', { text: 'Project name' }), title]));
-		var opts = [['builder:starter', 'rows', 'Builder: business website', 'A complete sample website to customise'], ['builder:blank', 'square', 'Builder: blank page', 'Start from nothing'], ['code', 'code', 'Code: HTML, CSS, JavaScript', 'Write everything by hand with live preview']];
+		var opts = [['builder:starter', 'rows', 'Builder: business website', 'A complete sample website to customise']];
+		if (window.PLEAcademy) window.PLEAcademy.starters().forEach(function (st) { opts.push(['builder:lab-' + st.id, st.icon, 'Builder: ' + st.name, st.note]); });
+		opts.push(['builder:blank', 'square', 'Builder: blank page', 'Start from nothing'], ['code', 'code', 'Code: HTML, CSS, JavaScript', 'Write everything by hand with live preview']);
 		var m;
 		opts.forEach(function (o) {
 			f.appendChild(h('button', { type: 'button', class: 'st-opt', onclick: function () { m.close(); var k = o[0].split(':'); newProject(k[0], k[1], title.value); } }, '<span>' + icon(o[1], 22) + '</span><b>' + o[2] + '</b><small>' + o[3] + '</small>'));
@@ -559,7 +573,7 @@
 	}
 	function newProject(mode, start, title) {
 		var body = { title: title || (mode === 'code' ? 'My code project' : 'My website'), mode: mode };
-		if (mode === 'builder') body.tree = start === 'blank' ? C.emptyPage() : C.starterPage();
+		if (mode === 'builder') { var lst = start && start.indexOf('lab-') === 0 && window.PLEAcademy ? window.PLEAcademy.starters().filter(function (x) { return 'lab-' + x.id === start; })[0] : null; body.tree = lst ? lst.tree() : start === 'blank' ? C.emptyPage() : C.starterPage(); }
 		else { body.html = '<header>\n  <h1>Hello, world!</h1>\n</header>\n<main>\n  <p>Start building here.</p>\n  <button id="btn">Click me</button>\n</main>\n'; body.css = 'body {\n  font-family: system-ui, sans-serif;\n  margin: 0;\n  padding: 24px;\n}\n\nh1 {\n  color: #2563eb;\n}\n'; body.js = "document.getElementById('btn').addEventListener('click', function () {\n  alert('It works!');\n});\n"; }
 		toast('Creating\u2026');
 		api('projects', { method: 'POST', body: body }).then(function (pr) { state.projects = null; location.hash = '#/project/' + pr.id; }).catch(function (e) { toast(e.message, 'err'); });

@@ -184,3 +184,4 @@ body:has(.st-modal) .ag-tip{display:none}
 .st-task+.al-promo{margin-top:16px}
 @media (max-width:900px){.ag.ag-bottom{top:auto;bottom:74px}.pe.sheet~.ag.ag-bottom,.ag.ag-compact.ag-bottom{top:56px;bottom:auto}}
 @media (min-width:901px){.ag.ag-left{right:auto;left:calc(min(320px,30vw) + 18px)}}
+.st-labwork{margin-top:22px}.st-labwork>summary{cursor:pointer;font-weight:700;color:var(--mut);padding:8px 0}.st-labwork .st-grid{margin-top:10px}

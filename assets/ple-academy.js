@@ -1225,6 +1225,17 @@
 			if (v.indexOf('d-') === 0) { var hit = designById(v.slice(2)); return hit ? { href: '#/lab/' + hit.t.id + '/' + hit.d.id + '/' + (hit.d.demo ? 'guided' : 'practise'), label: hit.t.name + ': ' + hit.d.name } : null; }
 			return null;
 		},
+		/* Modern starting points for new projects, assembled from Lab designs. */
+		starters: function () {
+			if (!LAB()) return [];
+			var f = function (t, id) { var hit = designById(id); return hit ? hit.d.build() : []; };
+			var page = function (ids) { var p0 = C.emptyPage(); ids.forEach(function (id) { f(null, id).forEach(function (sc) { p0.children.push(sc); }); }); return p0; };
+			return [
+				{ id: 'school', name: 'Training school (modern)', note: 'Dark menu, photo hero, courses, journey, numbers, reviews and an application form', icon: 'award', tree: function () { return page(['nav-dark', 'hero-photo', 'svc-icons', 'jr-steps', 'st-band', 'ts-slider', 'cta-band', 'ct-form', 'ft-columns']); } },
+				{ id: 'business', name: 'Service business (modern)', note: 'Split hero, picture cards, about, pricing, FAQ and contact', icon: 'card', tree: function () { return page(['nav-classic', 'hero-split', 'svc-pictures', 'ab-split', 'pr-three', 'fq-simple', 'ct-map', 'ft-cta']); } },
+				{ id: 'creative', name: 'Creative studio (bold)', note: 'Gradient hero, gallery, team, stats, testimonials and a dark contact band', icon: 'star', tree: function () { return page(['nav-dark', 'hero-gradient', 'gl-grid', 'tm-cards', 'st-counters', 'ts-cards', 'ct-dark', 'ft-centre']); } }
+			];
+		},
 		summary: function () {
 			if (!LAB()) return { all: 0, built: 0, watched: 0, started: true, makeover: false };
 			var all = 0, built = 0, watched = 0;
