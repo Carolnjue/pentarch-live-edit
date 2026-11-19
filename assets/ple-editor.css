@@ -160,3 +160,10 @@
 }
 @media (max-width:600px){.pe-devs{display:none}}
 @media (max-width:420px){.pe-grid{grid-template-columns:repeat(3,1fr)}}
+/* template canvas (real site) */
+.pe-fw.pe-tpl{position:relative}
+.pe-fw.pe-tpl .pe-frame{position:absolute;inset:0;width:100%;height:100%}
+.pe-frame.pe-back{visibility:hidden;pointer-events:none}
+.pe-node.pe-muted .pe-nl{color:#94a3b8;font-style:italic}
+.pe-node.r-section>.pe-nl{font-weight:700}.pe-node.r-row>.pe-nl,.pe-node.r-column>.pe-nl,.pe-node.r-block>.pe-nl{font-weight:600}
+.pe-node.r-section .pe-ni,.pe-node.r-block .pe-ni{color:#7c3aed}.pe-node.r-row .pe-ni{color:#0d9488}.pe-node.r-column .pe-ni{color:#f59e0b}

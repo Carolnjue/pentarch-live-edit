@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
 
 final class PLE2 {
 
-	const VERSION  = '2.0.0';
+	const VERSION  = '2.1.0';
 	const NS       = 'ple/v2';
 	const PROJECT  = 'ple_project';
 	const KLASS    = 'ple_class';
@@ -43,6 +43,8 @@ final class PLE2 {
 		add_filter( 'post_row_actions', array( __CLASS__, 'row_action' ), 10, 2 );
 		add_action( 'admin_bar_menu', array( __CLASS__, 'admin_bar' ), 90 );
 		add_filter( 'the_content', array( __CLASS__, 'the_content' ), 1000 );
+		add_filter( 'the_content', array( __CLASS__, 'canvas_content' ), 99999 );
+		add_action( 'template_redirect', array( __CLASS__, 'canvas_mode' ), 0 );
 		add_action( 'wp_head', array( __CLASS__, 'page_css' ), 20 );
 		add_filter( 'template_include', array( __CLASS__, 'canvas_template' ), 99 );
 		add_filter( 'display_post_states', array( __CLASS__, 'post_state' ), 10, 2 );
@@ -180,28 +182,12 @@ final class PLE2 {
 		if ( ! $post || ! current_user_can( 'edit_post', $id ) ) {
 			wp_die( esc_html__( 'You cannot edit this page.', 'pentarch-live-edit' ), 403 );
 		}
-		$tree = json_decode( (string) get_post_meta( $id, '_ple_tree', true ), true );
+		$built  = (bool) get_post_meta( $id, '_ple_on', true );
+		$tree   = $built ? json_decode( (string) get_post_meta( $id, '_ple_tree', true ), true ) : null;
+		$source = null;
 		if ( ! is_array( $tree ) ) {
-			$tree = null;
-			$old  = trim( (string) $post->post_content );
-			if ( '' !== $old ) {
-				/* Keep the existing content as a Custom code widget so nothing is lost. */
-				$tree = array(
-					'id'       => 'root',
-					'type'     => 'page',
-					'props'    => new stdClass(),
-					'style'    => new stdClass(),
-					'children' => array(
-						array( 'id' => 's' . wp_rand(), 'type' => 'section', 'props' => array( 'tag' => 'section', 'width' => 'boxed' ), 'style' => array( 'pt' => 40, 'pb' => 40, 'px' => 20 ), 'children' => array(
-							array( 'id' => 'r' . wp_rand(), 'type' => 'row', 'props' => array( 'stack' => 'mobile' ), 'style' => array( 'gap' => 24 ), 'children' => array(
-								array( 'id' => 'c' . wp_rand(), 'type' => 'column', 'props' => array( 'w' => 1 ), 'style' => new stdClass(), 'children' => array(
-									array( 'id' => 'w' . wp_rand(), 'type' => 'html', 'props' => array( 'code' => do_shortcode( $old ), 'label' => 'Existing content' ), 'style' => new stdClass(), 'children' => array() ),
-								) ),
-							) ),
-						) ),
-					),
-				);
-			}
+			$tree   = null;
+			$source = self::native_source( $post );
 		}
 		wp_enqueue_media( array( 'post' => $id ) );
 		wp_enqueue_style( 'ple-editor', self::asset( 'ple-editor.css' ), array(), null );
@@ -215,6 +201,8 @@ final class PLE2 {
 				'id'      => $id,
 				'title'   => get_the_title( $id ),
 				'tree'    => $tree,
+				'source'  => $source,
+				'canvas'  => add_query_arg( array( 'ple_canvas' => wp_create_nonce( 'ple_canvas_' . $id ), 'preview' => 'publish' === $post->post_status ? false : 'true' ), get_permalink( $id ) ),
 				'layout'  => get_post_meta( $id, '_ple_layout', true ) ? get_post_meta( $id, '_ple_layout', true ) : 'theme',
 				'rest'    => esc_url_raw( rest_url( self::NS . '/page/' . $id ) ),
 				'nonce'   => wp_create_nonce( 'wp_rest' ),
@@ -280,6 +268,77 @@ final class PLE2 {
 			return self::$dir . 'includes/canvas.php';
 		}
 		return $template;
+	}
+
+	/**
+	 * The page content and the Live Blocks it uses, so the builder can show
+	 * hand-written HTML as sections, rows, columns and widgets.
+	 */
+	public static function native_source( $post ) {
+		$content = (string) $post->post_content;
+		$blocks  = array();
+		if ( preg_match_all( '/\[ple\s[^\]]*\]/', $content, $m ) ) {
+			foreach ( array_unique( $m[0] ) as $code ) {
+				$b = self::block_from_shortcode( $code );
+				if ( $b ) {
+					$blocks[ $code ] = array( 'id' => $b->ID, 'title' => $b->post_title, 'content' => (string) $b->post_content );
+				}
+			}
+		}
+		return array( 'content' => $content, 'blocks' => (object) $blocks );
+	}
+
+	private static function block_from_shortcode( $code ) {
+		$atts = shortcode_parse_atts( trim( substr( $code, 4, -1 ) ) );
+		$id   = is_array( $atts ) && isset( $atts['id'] ) ? (string) $atts['id'] : '';
+		if ( '' === $id ) {
+			return null;
+		}
+		$b = is_numeric( $id ) ? get_post( (int) $id ) : get_page_by_path( sanitize_title( $id ), OBJECT, 'ple_block' );
+		return ( $b && 'ple_block' === $b->post_type ) ? $b : null;
+	}
+
+	private static function is_canvas() {
+		if ( empty( $_GET['ple_canvas'] ) || ! is_singular() ) { // phpcs:ignore
+			return false;
+		}
+		$id = get_queried_object_id();
+		return current_user_can( 'edit_post', $id ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ple_canvas'] ) ), 'ple_canvas_' . $id ); // phpcs:ignore
+	}
+
+	/* The real page, with the editable content left for the builder to fill in. */
+	public static function canvas_mode() {
+		if ( ! self::is_canvas() ) {
+			return;
+		}
+		if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+			define( 'DONOTCACHEPAGE', true );
+		}
+		do_action( 'litespeed_control_set_nocache', 'PLE builder canvas' );
+		nocache_headers();
+		add_filter( 'show_admin_bar', '__return_false', 999 );
+		/* Keep the Live Edit 1.x inline editor out of the builder canvas. */
+		$strip = function () {
+			foreach ( array( wp_scripts(), wp_styles() ) as $reg ) {
+				foreach ( (array) $reg->queue as $h ) {
+					$src = isset( $reg->registered[ $h ] ) ? (string) $reg->registered[ $h ]->src : '';
+					if ( false !== strpos( $src, 'pentarch-live-edit/assets/editor.' ) ) {
+						$reg->dequeue( $h );
+					}
+				}
+			}
+		};
+		add_action( 'wp_enqueue_scripts', $strip, 9999 );
+		add_action( 'wp_print_footer_scripts', $strip, 1 );
+	}
+
+	public static function canvas_content( $content ) {
+		static $done = false;
+		if ( $done || ! did_action( 'wp_head' ) || ! self::is_canvas() || (int) get_the_ID() !== (int) get_queried_object_id() ) {
+			return $content;
+		}
+		$done = true;
+		return '<!--PLE-ROOT-->';
 	}
 
 	/* ===================================================================
@@ -388,6 +447,47 @@ final class PLE2 {
 		return $out;
 	}
 
+	private static function save_native( $id, $nat, $code, $req ) {
+		if ( ! $code ) {
+			return new WP_Error( 'ple_cap', __( 'Your account cannot save hand-written HTML. Ask an administrator.', 'pentarch-live-edit' ), array( 'status' => 403 ) );
+		}
+		$blocks = isset( $nat['blocks'] ) && is_array( $nat['blocks'] ) ? $nat['blocks'] : array();
+		kses_remove_filters();
+		foreach ( $blocks as $bid => $html ) {
+			$b = get_post( (int) $bid );
+			if ( ! $b || 'ple_block' !== $b->post_type || ! current_user_can( 'edit_post', $b->ID ) ) {
+				continue;
+			}
+			if ( (string) $b->post_content !== (string) $html ) {
+				wp_update_post( wp_slash( array( 'ID' => $b->ID, 'post_content' => (string) $html ) ) );
+			}
+		}
+		$page = get_post( $id );
+		$new  = isset( $nat['content'] ) ? (string) $nat['content'] : $page->post_content;
+		$upd  = array( 'ID' => $id );
+		if ( $new !== $page->post_content ) {
+			$upd['post_content'] = $new;
+		}
+		$title = sanitize_text_field( (string) $req->get_param( 'title' ) );
+		if ( '' !== $title && $title !== $page->post_title ) {
+			$upd['post_title'] = $title;
+		}
+		if ( $req->get_param( 'publish' ) && current_user_can( 'publish_post', $id ) ) {
+			$upd['post_status'] = 'publish';
+		}
+		if ( count( $upd ) > 1 ) {
+			wp_update_post( wp_slash( $upd ) );
+		}
+		kses_init_filters();
+		delete_post_meta( $id, '_ple_on' );
+		do_action( 'litespeed_purge_all' );
+		if ( function_exists( 'rocket_clean_domain' ) ) {
+			rocket_clean_domain();
+		}
+		clean_post_cache( $id );
+		return array( 'ok' => true, 'status' => get_post_status( $id ), 'view' => get_permalink( $id ) );
+	}
+
 	public static function rest_page_get( $req ) {
 		$id = (int) $req['id'];
 		return array( 'tree' => json_decode( (string) get_post_meta( $id, '_ple_tree', true ), true ), 'layout' => get_post_meta( $id, '_ple_layout', true ) );
@@ -396,6 +496,10 @@ final class PLE2 {
 	public static function rest_page_save( $req ) {
 		$id   = (int) $req['id'];
 		$code = current_user_can( 'unfiltered_html' );
+		$nat  = $req->get_param( 'native' );
+		if ( is_array( $nat ) ) {
+			return self::save_native( $id, $nat, $code, $req );
+		}
 		$tree = self::clean_tree( $req->get_param( 'tree' ), 0, $code );
 		if ( ! $tree ) {
 			return new WP_Error( 'ple_bad', __( 'Nothing to save.', 'pentarch-live-edit' ), array( 'status' => 400 ) );

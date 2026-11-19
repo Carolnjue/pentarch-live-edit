@@ -14,6 +14,23 @@
 		txt = String(txt).replace(/\s+/g, ' ').trim();
 		return txt && !C.isContainer(n.type) ? base + ': ' + (txt.length > 26 ? txt.slice(0, 26) + '\u2026' : txt) : base;
 	};
+	var ROLES = { section: ['Section', 'square'], row: ['Row', 'rows'], column: ['Column', 'columns'], box: ['Box', 'square'], heading: ['Heading', 'heading'], text: ['Text', 'type'], button: ['Button', 'arrow'], link: ['Link', 'arrow'], image: ['Image', 'image'], icon: ['Icon', 'star'], list: ['List', 'list'], item: ['List item', 'minus'], css: ['Styles (CSS)', 'code'], script: ['Script', 'code'], media: ['Video / embed', 'video'], form: ['Form', 'mail'], field: ['Form field', 'type'], table: ['Table', 'rows'], block: ['Live Block', 'home'], code: ['Code', 'code'], comment: ['Note', 'code'] };
+	var TEXT_LEAF = /^(h[1-6]|p|li|a|button|span|label|figcaption|dt|dd|td|th|blockquote|strong|em|small|b|i|cite|summary|legend|caption|q|time|div|address|pre|code)$/i;
+	var leafRole = function (n) {
+		var t = n.props.tag, cls = (n.props.attrs && n.props.attrs['class']) || '';
+		if (/^h[1-6]$/.test(t)) return 'heading';
+		if (t === 'img' || t === 'picture') return 'image';
+		if (t === 'svg') return 'icon';
+		if (t === 'style') return 'css';
+		if (t === 'script' || t === 'noscript' || t === 'template') return 'script';
+		if (/^(iframe|video|audio|canvas|object)$/.test(t)) return 'media';
+		if (/^(input|select|textarea)$/.test(t)) return 'field';
+		if (t === 'table') return 'table';
+		if (t === 'button' || (t === 'a' && /btn|button|cta/i.test(cls))) return 'button';
+		if (t === 'a') return 'link';
+		if (t === 'li') return 'item';
+		return 'text';
+	};
 	var DEVICES = [['d', 'Desktop', '100%'], ['t', 'Tablet', '768px'], ['m', 'Phone', '390px']];
 	var SWATCHES = ['#0f172a', '#ffffff', '#f8fafc', '#2563eb', '#1d4ed8', '#0ea5e9', '#16a34a', '#f59e0b', '#dc2626', '#7c3aed', '#db2777', '#475569'];
 
@@ -122,6 +139,14 @@
 	/* ------------------------------------------------------------ canvas */
 	P.initFrame = function () {
 		var self = this;
+		this.frames = [this.frame];
+		if (this.o.pageTemplate) {
+			var f2 = h('iframe', { class: 'pe-frame pe-back', title: 'Page canvas' });
+			this.frameWrap.appendChild(f2); this.frames.push(f2); this.active = 0;
+			this.frameWrap.classList.add('pe-tpl');
+			this.renderCanvas();
+			return;
+		}
 		var doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style id="pe-page"></style><style>' + EDIT_CSS + '</style></head><body><div id="pe-root"></div><div id="pe-tb" hidden></div><div id="pe-drop" hidden></div></body></html>';
 		this.frame.addEventListener('load', function () {
 			self.doc = self.frame.contentDocument;
@@ -137,8 +162,10 @@
 	};
 	P.bindFrame = function () {
 		var self = this, d = this.doc;
+		d.addEventListener('submit', function (e) { e.preventDefault(); }, true);
 		d.addEventListener('click', function (e) {
 			if (e.target.closest('#pe-tb')) return;
+			if (self.o.pageTemplate && !e.target.closest('[contenteditable=true]')) { e.preventDefault(); e.stopPropagation(); }
 			var a = e.target.closest('a,label,input[type=checkbox]');
 			if (a && !e.target.closest('[contenteditable=true]') && !a.classList.contains('ple-nav-h') && a.tagName !== 'INPUT') e.preventDefault();
 			var drop = e.target.closest('[data-drop]');
@@ -178,8 +205,8 @@
 		/* climb until we find a node whose parent accepts the dragged thing, or that accepts it itself */
 		var cur = hit;
 		while (cur) {
-			if (C.accepts(cur.node.type, childType) && (!cur.node.children.length || cur.node.type === 'column')) return { parent: cur.node.id, index: cur.node.children.length, el: this.doc.querySelector('[data-ple="' + cur.node.id + '"]'), inside: true };
-			if (cur.parent && C.accepts(cur.parent.type, childType)) return { parent: cur.parent.id, index: cur.index + (after ? 1 : 0), el: this.doc.querySelector('[data-ple="' + cur.node.id + '"]'), after: after };
+			if (C.accepts(cur.node, childType) && (!cur.node.children.length || cur.node.type === 'column')) return { parent: cur.node.id, index: cur.node.children.length, el: this.doc.querySelector('[data-ple="' + cur.node.id + '"]'), inside: true };
+			if (cur.parent && C.accepts(cur.parent, childType)) return { parent: cur.parent.id, index: cur.index + (after ? 1 : 0), el: this.doc.querySelector('[data-ple="' + cur.node.id + '"]'), after: after };
 			cur = cur.parent ? C.find(this.tree, cur.parent.id) : null;
 		}
 		return { parent: 'root', index: this.tree.children.length, el: null };
@@ -192,7 +219,97 @@
 		if (t.inside) { de.className = 'in'; de.style.cssText = 'top:' + (r.top + sy) + 'px;left:' + r.left + 'px;width:' + r.width + 'px;height:' + r.height + 'px'; }
 		else { de.className = 'line'; de.style.cssText = 'top:' + ((t.after ? r.bottom : r.top) + sy - 2) + 'px;left:' + r.left + 'px;width:' + r.width + 'px;height:4px'; }
 	};
+	P.templateDoc = function (r) {
+		var tpl = this.o.pageTemplate;
+		var out = tpl.indexOf('<!--PLE-ROOT-->') > -1 ? tpl.replace('<!--PLE-ROOT-->', function () { return r.html; }) : tpl;
+		var head = '<style id="pe-page">' + r.css + '</style><style>' + EDIT_CSS + NOANIM + '</style>';
+		out = /<\/head>/i.test(out) ? out.replace(/<\/head>/i, function () { return head + '</head>'; }) : head + out;
+		var tail = '<div id="pe-tb" hidden></div><div id="pe-drop" hidden></div>';
+		var i = out.toLowerCase().lastIndexOf('</body>');
+		return i > -1 ? out.slice(0, i) + tail + out.slice(i) : out + tail;
+	};
+	P.loadTemplate = function () {
+		var self = this;
+		clearTimeout(this._lt);
+		this._lt = setTimeout(function () {
+			var r = C.render(self.tree, { editing: true });
+			var back = self.frames[1 - self.active], front = self.frames[self.active];
+			var sy = 0; try { sy = self.win ? self.win.scrollY : 0; } catch (e) { }
+			back.onload = function () {
+				back.onload = null;
+				self.active = 1 - self.active; self.frame = back;
+				self.doc = back.contentDocument; self.win = back.contentWindow;
+				self.root = self.doc.body; self.styleEl = self.doc.getElementById('pe-page');
+				self.tb = self.doc.getElementById('pe-tb'); self.dropEl = self.doc.getElementById('pe-drop');
+				self.bindFrame();
+				try { self.win.scrollTo(0, sy); } catch (e) { }
+				back.classList.remove('pe-back'); front.classList.add('pe-back');
+				self.computeRoles(); self.markSel();
+				if (self.tab === 'layers' || self.tab === 'edit') self.renderPanel();
+				setTimeout(function () { try { if (Math.abs(self.win.scrollY - sy) > 2) self.win.scrollTo(0, sy); } catch (e) { } self.placeToolbar(); }, 350);
+			};
+			back.srcdoc = self.templateDoc(r);
+		}, this._tplLoaded ? 150 : 0);
+		this._tplLoaded = true;
+	};
+	/* Name each part of hand-written HTML the way a page builder would. */
+	P.computeRoles = function () {
+		var self = this, R = {}, doc = this.doc;
+		var elOf = function (id) { return doc ? doc.querySelector('[data-ple="' + id + '"]') : null; };
+		C.walk(this.tree, function (n, parent) {
+			if (n.type === 'block') { R[n.id] = 'block'; return; }
+			if (n.type === 'txt') { R[n.id] = /^\s*\[[a-z]/i.test(n.props.text) ? 'code' : 'text'; return; }
+			if (n.type === 'cmt') { R[n.id] = 'comment'; return; }
+			if (n.type !== 'el') return;
+			if (C.isLeafEl(n)) { R[n.id] = leafRole(n); return; }
+			var t = n.props.tag, role = 'box';
+			if (/^(ul|ol)$/.test(t)) role = 'list';
+			else if (t === 'form') role = 'form';
+			else if (t === 'li') role = 'item';
+			else if (/^(section|header|footer|main|nav|article|aside)$/.test(t)) role = 'section';
+			if (role === 'box') {
+				var e = elOf(n.id), kids = n.children.filter(function (c) { return c.type === 'el' && !/^(style|script)$/.test(c.props.tag); }).length;
+				if (e && kids >= 2) {
+					var cs = doc.defaultView.getComputedStyle(e), d = cs.display;
+					if (/grid/.test(d) || (/flex/.test(d) && !/column/.test(cs.flexDirection))) role = 'row';
+				}
+				if (role === 'box' && parent && R[parent.id] === 'row') role = 'column';
+			}
+			R[n.id] = role;
+		});
+		this.roles = R;
+	};
+	P.role = function (n) {
+		if (!n) return '';
+		if (!C.NATIVE[n.type]) return n.type;
+		var r = this.roles && this.roles[n.id];
+		if (r) return r;
+		if (n.type === 'block') return 'block';
+		if (n.type === 'txt') return 'text';
+		if (n.type === 'cmt') return 'comment';
+		return C.isLeafEl(n) ? leafRole(n) : (/^(section|header|footer|main|nav)$/.test(n.props.tag) ? 'section' : 'box');
+	};
+	P.roleName = function (n) { if (!C.NATIVE[n.type]) return (W[n.type] || {}).label || n.type; return (ROLES[this.role(n)] || ['Item'])[0]; };
+	P.roleIcon = function (n) { if (!C.NATIVE[n.type]) return TYPE_ICON[n.type] || (W[n.type] || {}).icon || 'star'; return (ROLES[this.role(n)] || ['', 'square'])[1]; };
+	P.label = function (n) {
+		if (!C.NATIVE[n.type]) return label(n);
+		if (n.props && n.props.label) return n.props.label;
+		var base = this.roleName(n);
+		if (n.type === 'block') return base + ': ' + (n.props.title || '');
+		var snip = '';
+		if (n.type === 'txt') snip = n.props.text;
+		else if (n.type === 'el') {
+			var at = n.props.attrs || {};
+			if (n.props.leaf && !/^(style|script|svg)$/.test(n.props.tag)) snip = String(n.props.html || '').replace(/<[^>]+>/g, ' ');
+			if (n.props.tag === 'img') snip = at.alt || '';
+			if (!snip && at['class']) snip = '.' + String(at['class']).trim().split(/\s+/).slice(0, 2).join('.');
+			if (/^h[1-6]$/.test(n.props.tag)) base += ' ' + n.props.tag.toUpperCase();
+		}
+		snip = String(snip).replace(/\s+/g, ' ').trim();
+		return snip ? base + ': ' + (snip.length > 30 ? snip.slice(0, 30) + '\u2026' : snip) : base;
+	};
 	P.renderCanvas = function () {
+		if (this.o.pageTemplate) return this.loadTemplate();
 		if (!this.root) return;
 		var r = C.render(this.tree, { editing: true });
 		this.styleEl.textContent = r.css;
@@ -214,7 +331,7 @@
 		var self = this, r = e.getBoundingClientRect(), sy = this.win.scrollY;
 		this.tb.innerHTML = '';
 		var mk = function (t, ic, fn) { var b = self.doc.createElement('button'); b.type = 'button'; b.title = t; b.setAttribute('aria-label', t); b.innerHTML = ic; b.onclick = function (ev) { ev.preventDefault(); ev.stopPropagation(); fn(); }; self.tb.appendChild(b); };
-		var name = this.doc.createElement('span'); name.textContent = (W[hit.node.type] || {}).label || hit.node.type; this.tb.appendChild(name);
+		var name = this.doc.createElement('span'); name.textContent = this.roleName(hit.node); this.tb.appendChild(name);
 		if (hit.parent && hit.parent.type !== 'page') mk('Select parent', '&#8613;', function () { self.select(hit.parent.id); });
 		mk('Move up', '&#8593;', function () { self.move(self.sel, -1); });
 		mk('Move down', '&#8595;', function () { self.move(self.sel, 1); });
@@ -227,21 +344,30 @@
 	};
 	P.startInline = function (id) {
 		var hit = C.find(this.tree, id); if (!hit) return;
-		var w = W[hit.node.type]; if (!w || !w.inline) return;
-		var host = this.doc.querySelector('[data-ple="' + id + '"] [data-inline]'); if (!host) return;
-		var self = this, n = hit.node, kind = host.dataset.inline;
+		var self = this, n = hit.node, host, kind;
+		if (C.NATIVE[n.type]) {
+			if (!(n.type === 'txt' || (n.type === 'el' && n.props.leaf && TEXT_LEAF.test(n.props.tag)))) return;
+			host = this.doc.querySelector('[data-ple="' + id + '"]'); if (!host) return;
+			kind = n.type === 'txt' ? 'raw-text' : 'raw-html';
+		} else {
+			var w = W[n.type]; if (!w || !w.inline) return;
+			host = this.doc.querySelector('[data-ple="' + id + '"] [data-inline]'); if (!host) return;
+			kind = host.dataset.inline;
+		}
 		host.contentEditable = 'true'; host.focus();
 		try { var rg = this.doc.createRange(); rg.selectNodeContents(host); rg.collapse(false); var s = this.win.getSelection(); s.removeAllRanges(); s.addRange(rg); } catch (e) { }
 		this.tb.hidden = true;
 		var sync = function () {
-			if (kind === 'html') n.props.html = C.inert(host.innerHTML);
+			if (kind === 'raw-html') n.props.html = host.innerHTML;
+			else if (kind === 'raw-text') n.props.text = host.textContent;
+			else if (kind === 'html') n.props.html = C.inert(host.innerHTML);
 			else n.props.text = host.innerText.replace(/\n{2,}/g, '\n').trim();
 		};
 		host.addEventListener('input', sync);
 		host.addEventListener('keydown', function (e) { if (e.key === 'Enter' && kind === 'text' && n.type !== 'heading') { e.preventDefault(); host.blur(); } if (e.key === 'Escape') host.blur(); });
 		host.addEventListener('blur', function once() {
-			host.removeEventListener('blur', once); sync(); host.contentEditable = 'false';
-			self.commit(); self.renderCanvas(); if (self.tab === 'edit') self.renderPanel();
+			host.removeEventListener('blur', once); sync(); host.removeAttribute('contenteditable');
+			self.commit(); if (!self.o.pageTemplate) self.renderCanvas(); else self.placeToolbar(); if (self.tab === 'edit' || self.tab === 'layers') self.renderPanel();
 		});
 		this.toast('Typing on the page. Tap outside when done.');
 	};
@@ -249,6 +375,7 @@
 	/* ------------------------------------------------------------ actions */
 	P.select = function (id) {
 		this.sel = id;
+		if (id) { var c = C.find(this.tree, id); while (c && c.parent) { this.collapsed[c.parent.id] = false; c = C.find(this.tree, c.parent.id); } }
 		this.markSel();
 		if (id && !this.isPhone() && (this.tab === 'add' || this.tab === 'page')) this.showTab('edit');
 		else if (this.tab === 'edit' || this.tab === 'layers') this.renderPanel();
@@ -272,16 +399,42 @@
 	P.restore = function (snap) { var s = JSON.parse(snap); this.tree = s.t; this.o.title = s.title; this.titleIn.value = s.title; if (this.sel && !C.find(this.tree, this.sel)) this.sel = null; this.renderAll(); this.touch(); this.updUndo(); };
 	P.undo = function () { if (this.past.length < 2) return; this.future.push(this.past.pop()); this.restore(this.past[this.past.length - 1]); };
 	P.redo = function () { if (!this.future.length) return; var s = this.future.pop(); this.past.push(s); this.restore(s); };
-	P.change = function () {
+	P.change = function (kind, n) {
 		var self = this;
-		cancelAnimationFrame(this._raf); this._raf = requestAnimationFrame(function () { self.renderCanvas(); });
+		if (kind === 'style' && this.o.pageTemplate && this.styleEl) {
+			var r = C.render(this.tree, { editing: true }); this.styleEl.textContent = r.css;
+			/* Newly styled elements need their data-pid hook, so reload quietly. */
+			if (n && this.doc && !this.doc.querySelector('[data-pid="' + n.id + '"]')) this.renderCanvas();
+			setTimeout(function () { self.placeToolbar(); }, 30);
+		} else if (kind === 'leaf' && n && this.doc && this.doc.querySelector('[data-ple="' + n.id + '"]')) {
+			var e = this.doc.querySelector('[data-ple="' + n.id + '"]');
+			if (n.type === 'txt') e.textContent = n.props.text; else e.innerHTML = n.props.html || '';
+			this.placeToolbar();
+		} else {
+			cancelAnimationFrame(this._raf); this._raf = requestAnimationFrame(function () { self.renderCanvas(); });
+		}
 		clearTimeout(this._ct); this._ct = setTimeout(function () { self.commit(); if (self.tab === 'layers') self.renderPanel(); }, 400);
 		this.touch();
 	};
 	P.renderAll = function () { this.renderCanvas(); this.renderPanel(); if (!this.codeP.hidden) this.renderCode(); };
+	P.nativeSpot = function (sectionLike) {
+		var t = this.tree, hit = this.sel ? C.find(t, this.sel) : null;
+		var firstBlock = t.children.filter(function (c) { return c.type === 'block'; })[0];
+		if (!hit) { var host = firstBlock || t; var inner = host.children.length === 1 && host.children[0].type === 'el' && C.isContainer(host.children[0]) ? host.children[0] : host; return { parent: inner, index: inner.children.length }; }
+		if (sectionLike) {
+			/* After the section that holds the selection. */
+			var cur = hit, self = this;
+			while (cur && cur.parent && !(self.role(cur.node) === 'section' || cur.parent.type === 'block' || cur.parent.type === 'page')) cur = C.find(t, cur.parent.id);
+			if (cur.node.type === 'block') { var b = cur.node; var inn = b.children.length === 1 && b.children[0].type === 'el' && C.isContainer(b.children[0]) ? b.children[0] : b; return { parent: inn, index: inn.children.length }; }
+			return { parent: cur.parent, index: cur.index + 1 };
+		}
+		if (C.isContainer(hit.node) && hit.node.type !== 'page') return { parent: hit.node, index: hit.node.children.length };
+		return { parent: hit.parent, index: hit.index + 1 };
+	};
 	P.parentFor = function (type) {
 		/* Where should a new thing of `type` go, given the current selection? */
 		var t = this.tree, hit = this.sel ? C.find(t, this.sel) : null;
+		if (t.props && t.props.native && type !== 'column' && !(hit && !C.NATIVE[hit.node.type] && type !== 'section')) return this.nativeSpot(type === 'section' || type === 'row');
 		if (type === 'section') {
 			var cur = hit; while (cur && cur.node.type !== 'section') cur = cur.parent && cur.parent.type !== 'page' ? C.find(t, cur.parent.id) : null;
 			return { parent: t, index: cur ? cur.index + 1 : t.children.length };
@@ -299,7 +452,7 @@
 		/* widget */
 		if (hit) {
 			if (hit.node.type === 'column') return { parent: hit.node, index: hit.node.children.length };
-			if (!C.isContainer(hit.node.type)) return { parent: hit.parent, index: hit.index + 1 };
+			if (!C.isContainer(hit.node)) return { parent: hit.parent, index: hit.index + 1 };
 			var first = hit.node; while (first && first.type !== 'column') first = first.children[0];
 			if (first) return { parent: first, index: first.children.length };
 		}
@@ -311,6 +464,7 @@
 		else if (type.indexOf('row:') === 0) {
 			var k = +type.slice(4), cols = []; for (var i = 0; i < k; i++) cols.push(C.col([]));
 			n = C.row(cols); spot = this.parentFor('row');
+			if (t.props && t.props.native && spot && !C.accepts(spot.parent, 'row')) n = C.section([n]);
 			if (!spot) { n = C.section([n]); spot = { parent: t, index: t.children.length }; }
 		}
 		else if (type === 'column') { n = C.col([]); spot = this.parentFor('column'); if (!spot) return this.toast('Select a row first, then add a column.', 'warn'); if (spot.parent.children.length >= 6) return this.toast('A row can hold up to 6 columns.', 'warn'); }
@@ -325,7 +479,7 @@
 		var parent = target.parent === 'root' ? this.tree : C.find(this.tree, target.parent).node, n;
 		if (type.indexOf('tpl:') === 0) n = C.T[type.slice(4)]();
 		else n = C.node(type);
-		if (!C.accepts(parent.type, n.type)) { if (parent === this.tree) n = C.section([C.row([C.col([n])])]); else return; }
+		if (!C.accepts(parent, n.type)) { if (parent === this.tree) n = C.section([C.row([C.col([n])])]); else return; }
 		parent.children.splice(target.index, 0, n);
 		this.after(n.id);
 	};
@@ -362,8 +516,8 @@
 		var d = C.find(this.tree, dragId), t = C.find(this.tree, targetId); if (!d || !t) return;
 		var inside = false; C.walk(d.node, function (n) { if (n.id === targetId) inside = true; }); if (inside) return;
 		var parent, index;
-		if (!before && C.accepts(t.node.type, d.node.type)) { parent = t.node; index = t.node.children.length; }
-		else if (t.parent && C.accepts(t.parent.type, d.node.type)) { parent = t.parent; index = t.index; }
+		if (!before && C.accepts(t.node, d.node.type)) { parent = t.node; index = t.node.children.length; }
+		else if (t.parent && C.accepts(t.parent, d.node.type)) { parent = t.parent; index = t.index; }
 		else return this.toast('That cannot go there.', 'warn');
 		d.parent.children.splice(d.index, 1);
 		if (parent === d.parent && d.index < index) index--;
@@ -410,12 +564,17 @@
 		var ul = h('ul', { class: 'pe-tree', role: 'tree' });
 		var dragId = null;
 		var item = function (n, depth) {
-			var kids = n.children || [], open = !self.collapsed[n.id];
+			if (n.type === 'cmt') return null;
+			var kids = (n.children || []).filter(function (k) { return k.type !== 'cmt'; });
+			if (self.collapsed[n.id] === undefined && C.NATIVE[n.type]) self.collapsed[n.id] = depth >= 2 && !(n.type === 'el' && /^div$/.test(n.props.tag) && depth < 2);
+			var open = !self.collapsed[n.id];
 			var li = h('li', { role: 'treeitem', 'aria-expanded': kids.length ? String(open) : null });
 			var rowEl = h('div', { class: 'pe-node t-' + n.type + (self.sel === n.id ? ' on' : ''), style: 'padding-left:' + (8 + depth * 14) + 'px', draggable: self.isPhone() ? null : 'true' });
 			rowEl.appendChild(h('button', { type: 'button', class: 'pe-tw' + (kids.length ? '' : ' none'), 'aria-label': open ? 'Collapse' : 'Expand', onclick: function (e) { e.stopPropagation(); self.collapsed[n.id] = open; self.renderPanel(); } }, kids.length ? (open ? '&#9662;' : '&#9656;') : ''));
-			rowEl.appendChild(h('span', { class: 'pe-ni' }, C.icon(TYPE_ICON[n.type] || (W[n.type] || {}).icon || 'star', 15)));
-			rowEl.appendChild(h('span', { class: 'pe-nl', text: label(n) }));
+			rowEl.appendChild(h('span', { class: 'pe-ni' }, C.icon(self.roleIcon(n), 15)));
+			rowEl.appendChild(h('span', { class: 'pe-nl', text: self.label(n) }));
+			var rl = self.role(n); if (rl === 'css' || rl === 'script') rowEl.classList.add('pe-muted');
+			if (C.NATIVE[n.type]) rowEl.classList.add('r-' + rl);
 			var a = h('span', { class: 'pe-na' });
 			[['&#8593;', 'Move up', function () { self.move(n.id, -1); }], ['&#8595;', 'Move down', function () { self.move(n.id, 1); }], ['&#10697;', 'Duplicate', function () { self.duplicate(n.id); }], ['&#10005;', 'Delete', function () { self.remove(n.id); }]].forEach(function (b) {
 				a.appendChild(h('button', { type: 'button', title: b[1], 'aria-label': b[1], onclick: function (e) { e.stopPropagation(); b[2](); } }, b[0]));
@@ -433,16 +592,17 @@
 			rowEl.addEventListener('dragleave', function () { rowEl.classList.remove('dt', 'di'); });
 			rowEl.addEventListener('drop', function (e) { e.preventDefault(); var before = rowEl.classList.contains('dt'); rowEl.classList.remove('dt', 'di'); if (dragId) self.moveInto(dragId, n.id, before); dragId = null; });
 			li.appendChild(rowEl);
-			if (kids.length && open) { var sub = h('ul', { role: 'group' }); kids.forEach(function (k) { sub.appendChild(item(k, depth + 1)); }); li.appendChild(sub); }
+			if (kids.length && open) { var sub = h('ul', { role: 'group' }); kids.forEach(function (k) { var c = item(k, depth + 1); if (c) sub.appendChild(c); }); li.appendChild(sub); }
 			return li;
 		};
-		this.tree.children.forEach(function (n) { ul.appendChild(item(n, 0)); });
+		this.tree.children.forEach(function (n) { var c = item(n, 0); if (c) ul.appendChild(c); });
 		p.appendChild(ul);
 		var sel = this.sel && this.el.querySelector('.pe-node.on'); if (sel) setTimeout(function () { sel.scrollIntoView({ block: 'nearest' }); }, 0);
 	};
 	P.panelPage = function (p) {
 		var self = this, pp = this.tree.props;
 		p.appendChild(h('h4', { class: 'pe-h' }, 'Whole-page settings'));
+		if (pp.native) { p.appendChild(h('p', { class: 'pe-hint' }, 'This page uses your site\u2019s own design, so fonts and colours come from your site styles. To change one part, select it and use <b>Style</b>.')); return; }
 		(this.o.pageFields || []).forEach(function (pf) { p.appendChild(self.field(pf, pf.get(), function (v) { pf.set(v); self.touch(); })); });
 		var f = function (k, l, t, o) { p.appendChild(self.field({ k: k, l: l, t: t, o: o }, pp[k], function (v) { pp[k] = v; self.change(); })); };
 		f('font', 'Main font', 'select', [['system-ui,-apple-system,"Segoe UI",Roboto,sans-serif', 'System (fast)'], ['Georgia,"Times New Roman",serif', 'Classic serif'], ['"Trebuchet MS",Verdana,sans-serif', 'Friendly'], ['Arial,Helvetica,sans-serif', 'Arial'], ['"Courier New",monospace', 'Typewriter']]);
@@ -456,20 +616,26 @@
 		var self = this;
 		var hit = this.sel ? C.find(this.tree, this.sel) : null;
 		if (!hit) { p.appendChild(h('div', { class: 'pe-empty-l' }, '<b>Nothing selected</b><br>Tap any part of the page to edit it.')); return; }
-		var n = hit.node, w = W[n.type] || {};
+		var n = hit.node, w = W[n.type] || {}, nat = !!C.NATIVE[n.type];
+		if (nat) w = { styleFields: (n.type === 'el' && !/^(style|script|noscript|template)$/.test(n.props.tag)) ? this.nativeStyleFields(n) : [] };
 		/* breadcrumb */
 		var crumbs = [], c = hit;
 		while (c) { crumbs.unshift(c.node); c = c.parent && c.parent.type !== 'page' ? C.find(this.tree, c.parent.id) : null; }
 		var bc = h('div', { class: 'pe-bc' });
-		crumbs.forEach(function (cn, i) { bc.appendChild(h('button', { type: 'button', class: i === crumbs.length - 1 ? 'on' : '', onclick: function () { self.select(cn.id); self.showTab('edit'); } }, esc((W[cn.type] || {}).label || cn.type))); if (i < crumbs.length - 1) bc.appendChild(h('i', null, '\u203a')); });
+		crumbs.forEach(function (cn, i) { bc.appendChild(h('button', { type: 'button', class: i === crumbs.length - 1 ? 'on' : '', onclick: function () { self.select(cn.id); self.showTab('edit'); } }, esc(self.roleName(cn)))); if (i < crumbs.length - 1) bc.appendChild(h('i', null, '\u203a')); });
 		p.appendChild(bc);
 		var tabs = h('div', { class: 'pe-etabs' });
+		var simple = nat && n.type !== 'el';
+		if (simple) this.etab = 'content';
 		[['content', 'Content'], ['style', 'Style'], ['adv', 'Advanced']].forEach(function (t) {
+			if (simple && t[0] !== 'content') return;
 			tabs.appendChild(h('button', { type: 'button', class: self.etab === t[0] ? 'on' : '', onclick: function () { self.etab = t[0]; self.renderPanel(); } }, t[1]));
 		});
 		p.appendChild(tabs);
 		var body = h('div', { class: 'pe-fields' });
-		if (this.etab === 'content') {
+		if (this.etab === 'content' && nat) {
+			this.nativeContent(body, n);
+		} else if (this.etab === 'content') {
 			(w.fields || []).forEach(function (f) { body.appendChild(self.field(f, n.props[f.k], function (v) { n.props[f.k] = v; self.change(); })); });
 			if (n.type === 'row') body.appendChild(h('button', { type: 'button', class: 'pe-wide', onclick: function () { self.sel = n.id; self.add('column'); } }, '+ Add a column to this row'));
 			if (n.type === 'section') body.appendChild(h('button', { type: 'button', class: 'pe-wide', onclick: function () { self.add('row:1'); } }, '+ Add a row to this section'));
@@ -485,12 +651,15 @@
 				var fe = self.field(f, val, function (v) {
 					if (resp) { n.style[key] = n.style[key] || {}; if (v === '' || v === null) delete n.style[key][f.k]; else n.style[key][f.k] = v; }
 					else { if (v === '' || v === null) delete n.style[f.k]; else n.style[f.k] = v; }
-					self.change();
+					self.change('style', n);
 				}, resp ? n.style[f.k] : null);
 				if (resp) fe.querySelector('label').insertAdjacentHTML('beforeend', ' <span class="pe-r">' + dev + '</span>');
 				if (self.device !== 'd' && !f.r) fe.classList.add('pe-dim');
 				body.appendChild(fe);
 			});
+			if (!(w.styleFields || []).length) body.appendChild(h('p', { class: 'pe-hint' }, 'This item has no visual style. Edit its code in Content.'));
+		} else if (nat) {
+			this.nativeAdvanced(body, n);
 		} else {
 			body.appendChild(this.field({ k: 'label', l: 'Name in Layers', t: 'text' }, n.props.label || '', function (v) { n.props.label = v; self.change(); }));
 			body.appendChild(this.field({ k: 'anchor', l: 'Anchor ID (for links like #contact)', t: 'text' }, n.props.anchor || '', function (v) { n.props.anchor = v.replace(/[^\w-]/g, ''); self.change(); }));
@@ -502,8 +671,67 @@
 		}
 		p.appendChild(body);
 		var foot = h('div', { class: 'pe-efoot' });
+		if (n.type === 'block') { p.appendChild(foot); return; }
 		[['&#8593; Up', function () { self.move(n.id, -1); }], ['&#8595; Down', function () { self.move(n.id, 1); }], ['&#10697; Copy', function () { self.duplicate(n.id); }], ['&#10005; Delete', function () { self.remove(n.id); }]].forEach(function (b) { foot.appendChild(h('button', { type: 'button', onclick: b[1] }, b[0])); });
 		p.appendChild(foot);
+	};
+
+	/* ------------------------------------------------------------ native HTML panels */
+	P.nativeStyleFields = function (n) {
+		var list = C.STYLE_TEXT.concat(C.STYLE_BOX);
+		if (!n.props.leaf) list = [{ k: 'bgImg', l: 'Background image', t: 'image' }, { k: 'overlay', l: 'Image overlay', t: 'select', o: [['', 'None'], ['rgba(0,0,0,.35)', 'Dark light'], ['rgba(0,0,0,.6)', 'Dark strong'], ['rgba(255,255,255,.7)', 'Light']] }].concat(list);
+		return list;
+	};
+	P.nativeContent = function (body, n) {
+		var self = this, pr = n.props, at = pr.attrs = pr.attrs || {}, role = this.role(n), tag = pr.tag;
+		var add = function (f, v, set) { body.appendChild(self.field(f, v, set)); };
+		if (n.type === 'block') {
+			body.appendChild(h('div', { class: 'pe-note' }, '<b>' + esc(pr.title || 'Live Block') + '</b><br>This page\u2019s content lives in this Live Block. Everything inside it is broken into sections, rows, columns and widgets in <b>Layers</b>. Saving here also updates the block, so Live Edit stays in step.'));
+			body.appendChild(h('button', { type: 'button', class: 'pe-wide', onclick: function () { self.showTab('layers', self.isPhone()); } }, 'Open Layers'));
+			return;
+		}
+		if (n.type === 'txt') { add({ k: 'text', l: 'Text', t: 'textarea' }, pr.text, function (v) { pr.text = v; self.change('leaf', n); }); return; }
+		if (n.type === 'cmt') { add({ k: 'text', l: 'Note (not shown on the page)', t: 'textarea' }, pr.text, function (v) { pr.text = v; }); return; }
+		if (/^h[1-6]$/.test(tag)) add({ k: 'tag', l: 'Heading level', t: 'select', o: [['h1', 'H1 (page title)'], ['h2', 'H2'], ['h3', 'H3'], ['h4', 'H4'], ['h5', 'H5'], ['h6', 'H6']] }, tag, function (v) { pr.tag = v; self.change(); });
+		if (pr.leaf && TEXT_LEAF.test(tag)) {
+			add({ k: 'html', l: role === 'button' || role === 'link' ? 'Label' : 'Text', t: 'html' }, pr.html, function (v) { pr.html = v; self.change('leaf', n); });
+			body.appendChild(h('p', { class: 'pe-hint' }, this.isPhone() ? 'Tip: tap the selected text on the page again to type directly.' : 'Tip: double-click the text on the page to type directly.'));
+		}
+		if (tag === 'a') {
+			add({ k: 'href', l: 'Link', t: 'url' }, at.href || '', function (v) { at.href = v; self.change(); });
+			add({ k: 'target', l: 'Open in new tab', t: 'toggle' }, at.target === '_blank' ? '1' : '', function (v) { if (v) { at.target = '_blank'; at.rel = 'noopener'; } else { delete at.target; } self.change(); });
+		}
+		if (tag === 'img') {
+			add({ k: 'src', l: 'Picture', t: 'image' }, at.src || '', function (v) { at.src = v; delete at.srcset; delete at.sizes; self.change(); });
+			add({ k: 'alt', l: 'Alt text (for screen readers and Google)', t: 'text' }, at.alt || '', function (v) { at.alt = v; self.change(); });
+		}
+		if (pr.leaf && !TEXT_LEAF.test(tag) && tag !== 'img') {
+			add({ k: 'html', l: role === 'css' ? 'CSS' : role === 'script' ? 'Script' : 'Code inside <' + tag + '>', t: 'code' }, pr.html, function (v) { pr.html = v; self.change(); });
+			if (role === 'script') body.appendChild(h('p', { class: 'pe-hint' }, 'Scripts run on the page. Change them carefully.'));
+		}
+		if (!pr.leaf) {
+			body.appendChild(h('p', { class: 'pe-hint' }, 'This ' + this.roleName(n).toLowerCase() + ' holds other items. Select something inside it in Layers or on the page, or add new items here.'));
+			body.appendChild(h('button', { type: 'button', class: 'pe-wide', onclick: function () { self.showTab('add', self.isPhone()); } }, '+ Add inside this ' + this.roleName(n).toLowerCase()));
+			if ((at.style || '').indexOf('background') > -1) body.appendChild(h('p', { class: 'pe-hint' }, 'It has a background set in its own code; change it in Style or Advanced.'));
+		}
+	};
+	P.nativeAdvanced = function (body, n) {
+		var self = this, pr = n.props, at = pr.attrs = pr.attrs || {};
+		var add = function (f, v, set) { body.appendChild(self.field(f, v, set)); };
+		add({ k: 'label', l: 'Name in Layers', t: 'text' }, pr.label || '', function (v) { pr.label = v; if (self.tab === 'layers') self.renderPanel(); });
+		add({ k: 'tag', l: 'HTML tag', t: 'text' }, pr.tag, function (v) { v = v.toLowerCase().replace(/[^a-z0-9-]/g, ''); if (v) { pr.tag = v; self.change(); } });
+		add({ k: 'id', l: 'Anchor ID (for links like #contact)', t: 'text' }, at.id || '', function (v) { v = v.replace(/[^\w-]/g, ''); if (v) at.id = v; else delete at.id; self.change(); });
+		add({ k: 'class', l: 'CSS classes', t: 'text' }, at['class'] || '', function (v) { if (v.trim()) at['class'] = v; else delete at['class']; self.change(); });
+		add({ k: 'style', l: 'Inline style', t: 'textarea' }, at.style || '', function (v) { if (v.trim()) at.style = v; else delete at.style; self.change(); });
+		var other = Object.keys(at).filter(function (k) { return !/^(id|class|style)$/.test(k); }).map(function (k) { return k + '="' + at[k] + '"'; }).join('\n');
+		add({ k: 'attrs', l: 'Other attributes (one per line, name="value")', t: 'textarea' }, other, function (v) {
+			Object.keys(at).forEach(function (k) { if (!/^(id|class|style)$/.test(k)) delete at[k]; });
+			v.split('\n').forEach(function (line) { var m = line.match(/^\s*([^\s="'<>\/]+)\s*(?:=\s*"?([^"]*)"?)?\s*$/); if (m) at[m[1]] = m[2] === undefined ? '' : m[2]; });
+			self.change();
+		});
+		[['hideD', 'Hide on desktop'], ['hideT', 'Hide on tablet'], ['hideM', 'Hide on phone']].forEach(function (x) {
+			add({ k: x[0], l: x[1], t: 'toggle' }, pr[x[0]], function (v) { pr[x[0]] = v; self.change('style', n); });
+		});
 	};
 
 	/* ------------------------------------------------------------ fields */
@@ -629,10 +857,11 @@
 		else {
 			if (!this.sel) code = '<!-- Select something on the page to see its code -->';
 			else {
-				var tmp = document.createElement('div'); tmp.innerHTML = r.html;
-				var el = tmp.querySelector('#ple-' + this.sel);
-				code = el ? C.pretty(el.outerHTML) : '';
-				var id = '#ple-' + self.sel, out = [];
+				var tmp = document.createElement('div'); tmp.innerHTML = C.render(this.tree, { editing: true }).html;
+				var el = tmp.querySelector('[data-ple="' + this.sel + '"]');
+				if (el) { el = el.cloneNode(true); [el].concat([].slice.call(el.querySelectorAll('[data-ple]'))).forEach(function (x) { x.removeAttribute('data-ple'); }); }
+				code = el ? C.pretty(el.outerHTML.replace(/<\/?ple-[tb][^>]*>/g, '')) : '';
+				var selNode = C.find(self.tree, self.sel), id = selNode ? C.selOf(selNode.node) : '#ple-' + self.sel, out = [];
 				var grab = function (block) { var m, re = /([^{}]+)\{([^{}]*)\}/g, res = []; while ((m = re.exec(block))) if (m[1].indexOf(id) > -1) res.push(m[1].trim() + ' {\n  ' + m[2].split(';').filter(Boolean).join(';\n  ') + ';\n}'); return res; };
 				var flat = r.css.replace(/@media([^{]+)\{((?:[^{}]*\{[^{}]*\})*)\}/g, function (all, q, inner) { var g = grab(inner); if (g.length) out.push('/* On screens' + q.replace(/\(max-width:(\d+)px\)/, ' up to $1px wide').replace(/\(min-width:(\d+)px\)/, ' from $1px wide') + ' */\n' + g.join('\n')); return ''; });
 				out = grab(flat).concat(out);
@@ -666,7 +895,11 @@
 		var url = URL.createObjectURL(new Blob([C.fullDoc(this.tree, this.o.title)], { type: 'text/html' }));
 		window.open(url, '_blank');
 	};
-	P.data = function () { var r = C.render(this.tree); return { tree: this.tree, html: r.html, css: r.css, title: this.o.title }; };
+	P.data = function () {
+		var r = C.render(this.tree), d = { tree: this.tree, html: r.html, css: r.css, title: this.o.title };
+		if (this.tree.props && this.tree.props.native) d.native = C.serializeNative(this.tree);
+		return d;
+	};
 	P.save = function () {
 		var self = this; if (!this.o.save) return;
 		this.saveB.disabled = true; this.saveB.textContent = 'Saving\u2026';
@@ -693,6 +926,7 @@
 	};
 
 	/* Styles used only inside the editing canvas. */
+	var NOANIM = '*,*:before,*:after{transition:none!important;animation-duration:.001s!important;animation-delay:0s!important;animation-iteration-count:1!important;scroll-behavior:auto!important}ple-t{display:inline}html{scroll-behavior:auto!important}';
 	var EDIT_CSS = [
 		'html,body{margin:0;min-height:100%}body{padding-bottom:120px}',
 		'[data-ple]{cursor:pointer}',

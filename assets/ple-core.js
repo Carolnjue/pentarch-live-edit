@@ -268,8 +268,21 @@
 		render: function (n, ctx) { return '<div class="ple-code">' + (ctx && ctx.editing ? inert(n.props.code) : String(n.props.code || '')) + '</div>'; }
 	});
 
-	var isContainer = function (t) { return W[t] && W[t].container; };
-	var accepts = function (parentType, childType) {
+	var NATIVE = { el: 1, txt: 1, cmt: 1, block: 1 };
+	var VOID = /^(area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)$/i;
+	var isLeafEl = function (n) { return n && n.type === 'el' && (n.props.leaf || VOID.test(n.props.tag)); };
+	var isContainer = function (t) {
+		if (t && typeof t === 'object') { if (t.type === 'block' || t.type === 'page') return true; if (t.type === 'el') return !isLeafEl(t); return !!(W[t.type] && W[t.type].container); }
+		return !!(W[t] && W[t].container) || t === 'block';
+	};
+	/* parent may be a type string or a node; native HTML containers accept anything. */
+	var accepts = function (parent, childType) {
+		if (parent && typeof parent === 'object') {
+			if (parent.type === 'block' || (parent.type === 'page' && parent.props && parent.props.native)) return childType !== 'row' && childType !== 'column';
+			if (parent.type === 'el') return !isLeafEl(parent) && childType !== 'row' && childType !== 'column' && childType !== 'block';
+			parent = parent.type;
+		}
+		var parentType = parent;
 		var a = W[parentType] ? W[parentType].accepts : null;
 		if (parentType === 'page') return childType === 'section';
 		if (a === 'widget') return !isContainer(childType);
@@ -460,24 +473,98 @@
 		'@media(max-width:767px){.ple-stack-mobile,.ple-stack-tablet{grid-template-columns:1fr!important}}'
 	].join('\n');
 
+	var selOf = function (n) { return n.type === 'el' ? '[data-pid="' + n.id + '"]' : '#ple-' + n.id; };
+	var escText = function (t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\u00a0/g, '&nbsp;'); };
+	var escAttr = function (t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); };
+
+	/* ---------------------------------------------------------- HTML import */
+	var INLINE = /^(a|abbr|b|bdi|bdo|br|cite|code|data|del|dfn|em|i|img|ins|kbd|label|mark|q|s|samp|small|span|strong|sub|sup|time|u|var|wbr|font)$/i;
+	var ALWAYS_LEAF = /^(svg|style|script|noscript|template|iframe|video|audio|canvas|select|textarea|math|object|picture|button|table)$/i;
+	var TEXTY = /^(h[1-6]|p|li|a|button|span|label|figcaption|dt|dd|td|th|blockquote|strong|em|small|b|i|cite|summary|legend|caption|q|time)$/i;
+	var parseEl = function (el) {
+		var tag = el.tagName.toLowerCase();
+		if (el.hasAttribute('data-ple-tree')) { try { return JSON.parse(el.getAttribute('data-ple-tree')); } catch (e) { } }
+		if (tag === 'style' && /\bple-gen\b/.test(el.className || '')) return null;
+		var attrs = {}, id = el.getAttribute('data-pid') || uid(), style = {};
+		[].slice.call(el.attributes).forEach(function (at) { if (at.name !== 'data-pid' && at.name !== 'data-ple-style' && at.name !== 'data-ple') attrs[at.name] = at.value; });
+		if (el.hasAttribute('data-ple-style')) { try { style = JSON.parse(el.getAttribute('data-ple-style')) || {}; } catch (e) { } }
+		var kids = [].slice.call(el.childNodes);
+		var hasBlockChild = kids.some(function (k) { return k.nodeType === 1 && !INLINE.test(k.tagName); });
+		var hasContent = kids.some(function (k) { return (k.nodeType === 3 && k.data.trim()) || k.nodeType === 1; });
+		var leaf = ALWAYS_LEAF.test(tag) || VOID.test(tag) || (hasContent && !hasBlockChild && (TEXTY.test(tag) || kids.some(function (k) { return k.nodeType === 3 && k.data.trim(); })));
+		var n = { id: id, type: 'el', props: { tag: tag, attrs: attrs }, style: style, children: [] };
+		if (leaf) { n.props.leaf = 1; n.props.html = (tag === 'template') ? el.innerHTML : el.innerHTML; }
+		else n.children = parseNodes(el);
+		return n;
+	};
+	var parseNodes = function (parent) {
+		var out = [];
+		[].slice.call(parent.childNodes).forEach(function (k) {
+			if (k.nodeType === 3) { if (k.data.trim()) out.push({ id: uid(), type: 'txt', props: { text: k.data.replace(/^\s+|\s+$/g, function (w) { return /\n/.test(w) ? '' : ' '; }) }, style: {}, children: [] }); }
+			else if (k.nodeType === 8) out.push({ id: uid(), type: 'cmt', props: { text: k.data }, style: {}, children: [] });
+			else if (k.nodeType === 1) { var n = parseEl(k); if (n) out.push(n); }
+		});
+		return out;
+	};
+	var parseHTML = function (html) {
+		var t = document.createElement('template');
+		t.innerHTML = html;
+		return parseNodes(t.content);
+	};
+	/* Turn page content (with [ple] Live Block shortcodes) into one editable tree. */
+	var parseNative = function (src) {
+		var root = { id: 'root', type: 'page', props: { native: 1 }, style: {}, children: [] };
+		var content = String(src.content || ''), re = /\[ple\s[^\]]*\]/g, last = 0, m;
+		var pushHtml = function (h) { if (h && h.trim()) root.children = root.children.concat(parseHTML(h)); };
+		while ((m = re.exec(content))) {
+			pushHtml(content.slice(last, m.index));
+			var b = (src.blocks || {})[m[0]];
+			if (b) root.children.push({ id: 'b' + b.id, type: 'block', props: { blockId: b.id, title: b.title, shortcode: m[0] }, style: {}, children: parseHTML(b.content) });
+			else root.children.push({ id: uid(), type: 'txt', props: { text: m[0] }, style: {}, children: [] });
+			last = m.index + m[0].length;
+		}
+		pushHtml(content.slice(last));
+		return root;
+	};
+	/* Back to page content plus the HTML of each Live Block. */
+	var serializeNative = function (root) {
+		var content = '', blocks = {};
+		var chunk = function (kids) { var r = render({ type: 'page', props: { native: 1 }, children: kids }); return r.html + (r.css ? '\n<style class="ple-gen">\n' + r.css + '\n</style>' : ''); };
+		var loose = [];
+		var flush = function () { if (loose.length) { content += chunk(loose); loose = []; } };
+		(root.children || []).forEach(function (n) {
+			if (n.type === 'block') { flush(); content += n.props.shortcode; blocks[n.props.blockId] = chunk(n.children); }
+			else loose.push(n);
+		});
+		flush();
+		return { content: content, blocks: blocks };
+	};
+
 	var render = function (tree, ctx) {
 		ctx = ctx || {};
 		var css = [], d = [], t = [], m = [];
 		var pp = tree.props || {};
 		css.push('.ple-page{--pf:' + (pp.font || 'system-ui,sans-serif') + ';--pa:' + (pp.accent || '#2563eb') + ';--pt:' + (pp.text || '#0f172a') + ';--pb:' + (pp.bg || '#fff') + '}');
 		var rule = function (arr, n, s) {
-			var r = styleDecl(n, s), sel = '#ple-' + n.id;
+			var r = styleDecl(n, s), sel = selOf(n);
 			if (r.d.length) arr.push(sel + '{' + r.d.join(';') + '}');
 			if (r.inner.length) arr.push(sel + ' .ple-btn{' + r.inner.join(';') + '}');
 			r.extra.forEach(function (e) { arr.push(sel + ' ' + e[0] + '{' + e[1] + '}'); });
 		};
 		var attrs = function (n) { return ' id="ple-' + n.id + '"' + (ctx.editing ? ' data-ple="' + n.id + '"' : ''); };
-		var html = function (n) {
+		var native = !!pp.native, hasWidgets = false;
+		var html = function (n, parent) {
 			var s = n.style || {};
+			if (NATIVE[n.type]) return nativeHtml(n);
+			hasWidgets = true;
+			/* A builder subtree inside hand-written HTML keeps its structure in data-ple-tree. */
+			if (native && parent && (NATIVE[parent.type] || parent.type === 'page')) {
+				return '<div class="ple-page ple-embed" data-ple-tree="' + esc(JSON.stringify(n)) + '">' + html(n, n) + '</div>';
+			}
 			rule(d, n, s);
 			if (s.t && Object.keys(s.t).length) rule(t, n, Object.assign({ __t: 1 }, s.t));
 			if (s.m && Object.keys(s.m).length) rule(m, n, Object.assign({ __m: 1 }, s.m));
-			var kids = (n.children || []).map(html).join('');
+			var kids = (n.children || []).map(function (c) { return html(c, n); }).join('');
 			var cls = (n.props && n.props.cls ? ' ' + esc(n.props.cls) : '');
 			var anchor = n.props && n.props.anchor ? ' data-anchor="' + esc(n.props.anchor) + '"' : '';
 			switch (n.type) {
@@ -496,7 +583,33 @@
 					return '<div class="ple-widget ple-w-' + n.type + hx + cls + '"' + attrs(n) + anchor + '>' + (w && w.render ? w.render(n, ctx) : '') + '</div>';
 			}
 		};
-		var body = (tree.children || []).map(html).join('');
+		var nativeHtml = function (n) {
+			var s = n.style || {};
+			var styled = n.type === 'el' && ((Object.keys(s).filter(function (k) { return k !== 't' && k !== 'm'; }).length) || (s.t && Object.keys(s.t).length) || (s.m && Object.keys(s.m).length) || n.props.hideD || n.props.hideT || n.props.hideM);
+			if (styled) {
+				rule(d, n, s);
+				if (s.t && Object.keys(s.t).length) rule(t, n, s.t);
+				if (s.m && Object.keys(s.m).length) rule(m, n, s.m);
+			}
+			var kids = function () { return (n.children || []).map(function (c) { return html(c, n); }).join(''); };
+			switch (n.type) {
+				case 'txt': return ctx.editing ? '<ple-t data-ple="' + n.id + '">' + escText(n.props.text) + '</ple-t>' : escText(n.props.text);
+				case 'cmt': return '<!--' + String(n.props.text || '').replace(/--/g, '- -') + '-->';
+				case 'block': return ctx.editing ? '<ple-b data-ple="' + n.id + '" style="display:contents">' + kids() + '</ple-b>' : kids();
+			}
+			var p = n.props, tag = String(p.tag || 'div').toLowerCase().replace(/[^a-z0-9-]/g, '') || 'div';
+			var a = '', at = p.attrs || {};
+			Object.keys(at).forEach(function (k) {
+				if (!/^[^\s"'>\/=]+$/.test(k) || k === 'data-ple' || k === 'data-pid' || k === 'data-ple-style') return;
+				a += ' ' + k + (at[k] === '' && /^(hidden|async|defer|disabled|checked|selected|required|readonly|multiple|autoplay|muted|loop|controls|playsinline|allowfullscreen|open|novalidate)$/i.test(k) ? '' : '="' + escAttr(at[k]) + '"');
+			});
+			if (styled) a += ' data-pid="' + n.id + '" data-ple-style="' + escAttr(JSON.stringify(s)) + '"';
+			if (ctx.editing) a += ' data-ple="' + n.id + '"';
+			if (VOID.test(tag)) return '<' + tag + a + '>';
+			var inner = p.leaf ? (ctx.editing && tag === 'script' ? p.html : (p.html || '')) : kids();
+			return '<' + tag + a + '>' + inner + '</' + tag + '>';
+		};
+		var body = (tree.children || []).map(function (c) { return html(c, tree); }).join('');
 		var out = css.concat(d);
 		if (t.length) out.push('@media(max-width:1024px){' + t.join('') + '}');
 		if (m.length) out.push('@media(max-width:767px){' + m.join('') + '}');
@@ -504,10 +617,15 @@
 		var hide = [];
 		walk(tree, function (n) {
 			var a = n.props || {};
-			if (a.hideD) hide.push('@media(min-width:1025px){#ple-' + n.id + '{display:none!important}}');
-			if (a.hideT) hide.push('@media(min-width:768px) and (max-width:1024px){#ple-' + n.id + '{display:none!important}}');
-			if (a.hideM) hide.push('@media(max-width:767px){#ple-' + n.id + '{display:none!important}}');
+			if (n.type === 'page' || n.type === 'txt' || n.type === 'cmt' || n.type === 'block') return;
+			if (a.hideD) hide.push('@media(min-width:1025px){' + selOf(n) + '{display:none!important}}');
+			if (a.hideT) hide.push('@media(min-width:768px) and (max-width:1024px){' + selOf(n) + '{display:none!important}}');
+			if (a.hideM) hide.push('@media(max-width:767px){' + selOf(n) + '{display:none!important}}');
 		});
+		if (native) {
+			var nc = (hasWidgets ? BASE_CSS + '\n' + css.join('\n') + '\n' : '') + d.join('\n') + (t.length ? '\n@media(max-width:1024px){' + t.join('') + '}' : '') + (m.length ? '\n@media(max-width:767px){' + m.join('') + '}' : '') + (hide.length ? '\n' + hide.join('\n') : '');
+			return { html: body, css: nc.trim(), widgets: hasWidgets };
+		}
 		return { html: '<div class="ple-page">' + body + '</div>', css: BASE_CSS + '\n' + out.join('\n') + '\n' + hide.join('\n') + (pp.customCss ? '\n' + pp.customCss : '') };
 	};
 	var fullDoc = function (tree, title) {
@@ -534,7 +652,8 @@
 	global.PLECore = {
 		W: W, ICONS: ICONS, icon: icon, esc: esc, h: h, uid: uid, clone: clone, inert: inert, safeUrl: safeUrl, placeholder: placeholder,
 		node: node, col: col, row: row, section: section, emptyPage: emptyPage, starterPage: starterPage,
-		walk: walk, find: find, reId: reId, accepts: accepts, isContainer: isContainer,
+		walk: walk, find: find, reId: reId, accepts: accepts, isContainer: isContainer, isLeafEl: isLeafEl, NATIVE: NATIVE, VOID: VOID,
+		parseHTML: parseHTML, parseNative: parseNative, serializeNative: serializeNative, selOf: selOf,
 		T: T, TEMPLATES: TEMPLATES, STYLE_BOX: STYLE_BOX, STYLE_TEXT: STYLE_TEXT,
 		render: render, fullDoc: fullDoc, pretty: pretty, BASE_CSS: BASE_CSS
 	};
