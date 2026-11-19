@@ -675,7 +675,7 @@
 			var sc = Math.min(1, cw / vw);
 			fr.style.width = vw + 'px'; fr.style.height = vh + 'px'; fr.style.transform = 'scale(' + sc + ')';
 			wrap.style.height = Math.round(vh * sc) + 'px';
-			if (!live) fr.onload = function () { try { var dh = Math.ceil(fr.contentDocument.body.getBoundingClientRect().height) || vh; wrap.style.height = Math.round(Math.min(dh, vh) * sc) + 'px'; } catch (e) { } };
+			if (!live) fr.onload = function () { var m = function () { try { var dh = Math.ceil(fr.contentDocument.body.getBoundingClientRect().height) || vh; wrap.style.height = Math.round(Math.min(Math.max(dh, 160), vh) * sc) + 'px'; } catch (e) { } }; m(); setTimeout(m, 700); setTimeout(m, 2000); };
 		};
 		setTimeout(function () { fit(); if (!lazy || !('IntersectionObserver' in g)) load(); else { var io = new IntersectionObserver(function (es) { if (es[0].isIntersecting) { io.disconnect(); load(); } }, { rootMargin: '300px' }); io.observe(wrap); } }, 0);
 		return wrap;
