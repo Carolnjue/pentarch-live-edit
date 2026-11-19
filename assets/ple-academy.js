@@ -170,8 +170,11 @@
 					Cl.children.forEach(function (Wd) {
 						var nth = count[Wd.type] = (count[Wd.type] || 0); count[Wd.type]++;
 						var ref = { s: s, r: ri, c: ci, w: { type: Wd.type, nth: nth } }, lab = typeLabel(Wd.type);
-						steps.push({ title: 'Add a ' + lab + ' to ' + cname, say: 'Select ' + cname + ', open <b>Add</b>, search for <b>' + esc(lab) + '</b> and tap it.', ops: [{ t: 'add', key: Wd.type, into: { s: s, r: ri, c: ci }, ref: ref, check: 'type', type: Wd.type }] });
-						stepsFor(Wd, ref, lab.toLowerCase()).forEach(function (x) { steps.push(x); });
+						var pp = Wd.props || {}, snip = String(pp.text || pp.title || pp.brand || pp.before || pp.ftitle || pp.name || (pp.html || '').replace(/<[^>]+>/g, ' ') || '').replace(/\s+/g, ' ').trim();
+						if (snip.length > 22) snip = snip.slice(0, 22).replace(/\s+\S*$/, '') + '\u2026';
+						var nm = lab.toLowerCase() + (snip ? ' \u201c' + snip + '\u201d' : '');
+						steps.push({ title: 'Add a ' + lab + ' to ' + cname, say: 'Select ' + cname + ', open <b>Add</b>, search for <b>' + esc(lab) + '</b> and tap it.' + (snip ? ' It will become \u201c' + esc(snip) + '\u201d.' : ''), ops: [{ t: 'add', key: Wd.type, into: { s: s, r: ri, c: ci }, ref: ref, check: 'type', type: Wd.type }] });
+						stepsFor(Wd, ref, nm).forEach(function (x) { steps.push(x); });
 					});
 				});
 			});
@@ -247,6 +250,7 @@
 		clearInterval(this.alive); clearInterval(this.pollT);
 		[this.el, this.cur, this.ring, this.tip].forEach(function (x) { if (x && x.parentNode) x.remove(); });
 		if (this.keyFn) document.removeEventListener('keydown', this.keyFn, true);
+		if (this.downFn) document.removeEventListener('pointerdown', this.downFn, true);
 	};
 	GP.head = function (badge, extra) {
 		var self = this, o = this.o, n = this.steps.length;
@@ -431,7 +435,7 @@
 		this.el.innerHTML = '';
 		this.head('Demo');
 		if (!st) return;
-		this.el.appendChild(h('p', { class: 'ag-step' }, 'Step ' + (this.i + 1) + ' of ' + n));
+		this.el.appendChild(h('button', { type: 'button', class: 'ag-step ag-stepb', title: 'See all steps', onclick: function () { self.paused = true; self.drawWatch(); self.stepList(); } }, 'Step ' + (this.i + 1) + ' of ' + n + ' &#9662;'));
 		this.el.appendChild(h('h4', { class: 'ag-h' }, esc(st.title)));
 		if (st.say) this.el.appendChild(h('p', { class: 'ag-say' }, st.say));
 		var ul = h('ul', { class: 'ag-ops' });
@@ -458,6 +462,13 @@
 		};
 		setTimeout(go, 80);
 	};
+	GP.stepList = function () {
+		var self = this, box = h('div', { class: 'ag-list' });
+		this.steps.forEach(function (st, i) {
+			box.appendChild(h('button', { type: 'button', class: 'ag-li ag-lib' + (i === self.i ? ' on' : '') + (i < self.i ? ' past' : ''), onclick: function () { var m = document.querySelector('.st-modal'); if (m) m.remove(); if (i > self.i) self.jump(i, true); else if (i < self.i) self.jump(i); } }, '<b>' + (i + 1) + '. ' + esc(st.title) + '</b>'));
+		});
+		X().modal('Jump to a step', box);
+	};
 	GP.applyStep = function (st) {
 		var ed = this.ed;
 		this.snaps[this.steps.indexOf(st)] = this.snaps[this.steps.indexOf(st)] || JSON.stringify(ed.tree);
@@ -479,6 +490,14 @@
 			else if (e.key === 'ArrowLeft' && e.shiftKey) { e.preventDefault(); self.jump(self.i - 1); }
 		};
 		document.addEventListener('keydown', this.keyFn, true);
+		/* If the learner starts working on the page, pause so the demo does not fight them. */
+		this.downFn = function (e) {
+			if (self.dead) return document.removeEventListener('pointerdown', self.downFn, true);
+			if (!e.isTrusted || self.paused || (e.target.closest && e.target.closest('.ag'))) return;
+			self.paused = true; self.drawWatch(); self.ed.toast('Demo paused. Press Play on the card to continue.');
+		};
+		document.addEventListener('pointerdown', this.downFn, true);
+		try { this.ed.doc.addEventListener('pointerdown', this.downFn, true); } catch (x) { }
 		this.drawWatch(); this.loop();
 	};
 	GP.loop = async function () {
@@ -1018,6 +1037,12 @@
 
 	/* Any section in any website can be saved as a reusable part. */
 	if (g.PLEEditor) {
+		var origBind = EP.bindFrame;
+		EP.bindFrame = function () {
+			var r = origBind.apply(this, arguments), d = this.doc;
+			try { d.addEventListener('pointerdown', function (e) { var cg = g.PLEAcademy && g.PLEAcademy.current; if (cg && cg.downFn && cg.ed && cg.ed.doc === d) cg.downFn(e); }, true); } catch (x) { }
+			return r;
+		};
 		var origEdit = EP.panelEdit;
 		EP.panelEdit = function (p) {
 			var r = origEdit.apply(this, arguments), self = this;
