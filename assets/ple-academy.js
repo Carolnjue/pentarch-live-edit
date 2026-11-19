@@ -622,7 +622,25 @@
 		/* Point gently at what to change. */
 		this.ring.classList.remove('on');
 		var op = first >= 0 ? st.ops[first] : null;
-		if (op && op.ref && (op.t === 'set' || op.t === 'select')) { var node = resolve(this.ed.tree, op.ref), el = this.canvasEl(node); if (el && !this.ed.isPhone()) { var r = this.rectOf(el); if (r.height > 4) this.showRing(r); } }
+		if (op && op.ref && (op.t === 'set' || op.t === 'select')) {
+			var node = resolve(this.ed.tree, op.ref), el = this.canvasEl(node);
+			if (el && !this.ed.isPhone()) { var r = this.rectOf(el); if (r.height > 4) this.showRing(r); }
+			/* On phones, move the page so the item is not hidden behind this card. */
+			var fk = this.i + ':' + first;
+			if (el && this.ed.isPhone() && fk !== this._focusKey && !this.ed.el.classList.contains('sheet')) {
+				this._focusKey = fk;
+				var self2 = this;
+				setTimeout(function () {
+					try {
+						var fr = self2.ed.frame.getBoundingClientRect(), er = el.getBoundingClientRect();
+						/* Put the card at the bottom when the item is near the top, and the other way round. */
+						var top = fr.top + er.top + Math.min(er.height, 120) / 2;
+						if (top < 0 || top > innerHeight) { self2.ed.win.scrollBy({ top: er.top - 140, behavior: 'auto' }); er = el.getBoundingClientRect(); top = fr.top + er.top + Math.min(er.height, 120) / 2; }
+						self2.el.classList.toggle('ag-bottom', top < innerHeight * 0.5);
+					} catch (x) { }
+				}, 60);
+			}
+		}
 		if (all && !this.advancing) {
 			this.advancing = true;
 			this.el.classList.add('ag-pass');

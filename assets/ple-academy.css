@@ -182,3 +182,4 @@ body:has(.st-modal) .ag-tip{display:none}
 @media (min-width:900px){.al-cmp{grid-template-columns:1fr 1fr}}
 .al-cmpc b{display:block;margin-bottom:6px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
 .st-task+.al-promo{margin-top:16px}
+@media (max-width:900px){.ag.ag-bottom{top:auto;bottom:74px}.pe.sheet~.ag.ag-bottom,.ag.ag-compact.ag-bottom{top:56px;bottom:auto}}
