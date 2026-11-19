@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Pentarch Live Edit
  * Description:       Edit hand-built pages on screen, build pages visually with the PLE builder (sections, rows, columns, widgets and Layers), and run PLE Studio, a mobile-first platform for teaching web design.
- * Version:           2.6.9
+ * Version:           2.7.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Pentarch Systems Solutions

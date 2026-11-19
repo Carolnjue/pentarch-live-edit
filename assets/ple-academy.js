@@ -264,6 +264,7 @@
 	/* ================================================================ guide player */
 	function Guide(ed, steps, mode, opts) {
 		this.ed = ed; this.steps = steps; this.mode = mode; this.o = opts || {};
+		this.voice = mode === 'watch' && !!(X() && X().store.get('lab-voice'));
 		this.i = this.o.start || 0; this.speed = mode === 'watch' ? (+(X() && X().store.get('lab-speed')) || 1) : 1; this.paused = false; this.snaps = []; this.token = { cancel: false };
 		this.saved = false;
 		if (g.PLEAcademy) g.PLEAcademy.current = this;
@@ -275,6 +276,19 @@
 		else { this.drawPractice(); if (this.o.brief) { var me = this; this.pollT = setInterval(function () { var sig = JSON.stringify(me.steps[0].ops.map(function (op) { return opOk(op, me.ed, me); })); if (sig !== me._bs) { me._bs = sig; me.drawPractice(me.lastRes); } }, 1500); } }
 	}
 	var GP = Guide.prototype;
+	var plain = function (x) { var d = document.createElement('div'); d.innerHTML = String(x || ''); return (d.textContent || '').replace(/\s+/g, ' ').trim(); };
+	GP.untilQuiet = async function (max) { var t0 = Date.now(); while (g.speechSynthesis && g.speechSynthesis.speaking && Date.now() - t0 < max) await this.waitReal(150); };
+	GP.speak = function (text) {
+		if (!this.voice || !g.speechSynthesis || !text) return;
+		try {
+			g.speechSynthesis.cancel();
+			var u = new SpeechSynthesisUtterance(plain(text));
+			u.lang = 'en-GB'; u.rate = Math.min(1.6, 0.95 + (this.speed - 1) * 0.2);
+			var vs = g.speechSynthesis.getVoices().filter(function (v) { return /en-GB/i.test(v.lang); });
+			if (vs.length) u.voice = vs[0];
+			g.speechSynthesis.speak(u);
+		} catch (e) { }
+	};
 	GP.build = function () {
 		var self = this;
 		this.el = h('div', { class: 'ag ag-' + this.mode, role: 'dialog', 'aria-label': 'Guide' });
@@ -291,6 +305,7 @@
 		clearInterval(this.alive); clearInterval(this.pollT);
 		[this.el, this.cur, this.ring, this.tip].forEach(function (x) { if (x && x.parentNode) x.remove(); });
 		if (this.keyFn) document.removeEventListener('keydown', this.keyFn, true);
+		try { if (this.voice && g.speechSynthesis) g.speechSynthesis.cancel(); } catch (x) { }
 		if (this.downFn) document.removeEventListener('pointerdown', this.downFn, true);
 	};
 	GP.head = function (badge, extra) {
@@ -489,6 +504,7 @@
 		ctl.appendChild(h('button', { type: 'button', title: 'Previous step', 'aria-label': 'Previous step', disabled: this.i === 0 ? true : null, onclick: function () { self.jump(self.i - 1); } }, '&#9664;&#9664;'));
 		ctl.appendChild(h('button', { type: 'button', class: 'ag-play', title: (this.paused ? 'Play' : 'Pause') + ' (Space)', 'aria-label': this.paused ? 'Play' : 'Pause', onclick: function () { self.paused = !self.paused; self.drawWatch(); } }, this.paused ? '&#9654; Play' : '&#10074;&#10074; Pause'));
 		ctl.appendChild(h('button', { type: 'button', title: 'Next step', 'aria-label': 'Next step', disabled: this.i >= n - 1 ? true : null, onclick: function () { self.jump(self.i + 1, true); } }, '&#9654;&#9654;'));
+		if (g.speechSynthesis) ctl.appendChild(h('button', { type: 'button', class: 'ag-spd' + (self.voice ? ' on' : ''), title: self.voice ? 'Narration on' : 'Read the steps aloud', 'aria-pressed': String(self.voice), onclick: function () { self.voice = !self.voice; X().store.set('lab-voice', self.voice ? 1 : 0); if (!self.voice) g.speechSynthesis.cancel(); else self.speak(self.steps[self.i] && self.steps[self.i].title); self.drawWatch(); } }, self.voice ? '&#128266;' : '&#128264;'));
 		ctl.appendChild(h('button', { type: 'button', class: 'ag-spd', title: 'Speed', onclick: function () { self.speed = self.speed >= 4 ? 1 : self.speed * 2; X().store.set('lab-speed', self.speed); self.drawWatch(); } }, self.speed + '&times;'));
 		this.el.appendChild(ctl);
 	};
@@ -551,12 +567,14 @@
 				var st = this.steps[this.i];
 				this.snaps[this.i] = JSON.stringify(this.ed.tree);
 				this.opI = 0; this.drawWatch();
+				this.speak(st.title + '. ' + (st.say || ''));
 				await this.wait(this.i === 0 ? 1200 : 700);
+				if (this.voice) await this.untilQuiet(9000);
 				for (var k = 0; k < (st.ops || []).length; k++) {
 					this.opI = k; this.drawWatch();
 					this.tip.innerHTML = st.ops[k].t === 'note' ? '' : opCaption(st.ops[k]);
 					await this.doOp(st.ops[k]);
-					if (whyFor(st.ops[k])) await this.wait(700);
+					if (whyFor(st.ops[k])) { if (this.voice) this.speak(whyFor(st.ops[k])); await this.wait(this.voice ? 2200 : 700); }
 				}
 				this.tip.classList.remove('on');
 				this.opI = (st.ops || []).length; this.drawWatch();
