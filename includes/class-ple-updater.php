@@ -46,10 +46,18 @@ final class PLE_Updater {
 		if ( false !== $v && ! $force ) {
 			return $v;
 		}
-		$r = wp_remote_get( 'https://raw.githubusercontent.com/' . self::REPO . '/' . self::BRANCH . '/pentarch-live-edit.php?' . time(), array( 'timeout' => 12 ) );
-		$v = '';
-		if ( ! is_wp_error( $r ) && 200 === wp_remote_retrieve_response_code( $r ) && preg_match( '/^\s*\*\s*Version:\s*([0-9.]+)/mi', wp_remote_retrieve_body( $r ), $m ) ) {
-			$v = $m[1];
+		/* The GitHub API is always current; the raw file host can lag a few minutes. */
+		$v    = '';
+		$urls = array(
+			array( 'https://api.github.com/repos/' . self::REPO . '/contents/pentarch-live-edit.php?ref=' . self::BRANCH, array( 'Accept' => 'application/vnd.github.raw', 'User-Agent' => 'Pentarch-Live-Edit' ) ),
+			array( 'https://raw.githubusercontent.com/' . self::REPO . '/' . self::BRANCH . '/pentarch-live-edit.php', array() ),
+		);
+		foreach ( $urls as $u ) {
+			$r = wp_remote_get( $u[0], array( 'timeout' => 12, 'headers' => $u[1] ) );
+			if ( ! is_wp_error( $r ) && 200 === wp_remote_retrieve_response_code( $r ) && preg_match( '/^\s*\*\s*Version:\s*([0-9.]+)/mi', wp_remote_retrieve_body( $r ), $m ) ) {
+				$v = $m[1];
+				break;
+			}
 		}
 		set_site_transient( self::KEY, $v, $v ? 3 * HOUR_IN_SECONDS : 30 * MINUTE_IN_SECONDS );
 		return $v;
