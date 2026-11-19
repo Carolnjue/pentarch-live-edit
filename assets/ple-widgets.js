@@ -470,7 +470,7 @@
 	/* Section templates that use the new widgets. */
 	var T = C.T, node = C.node, col = C.col, row = C.row, section = C.section;
 	T.heroslider = function () { return section([row([col([node('heroslider')])])], { pt: 0, pb: 0, px: 0 }, { width: 'full' }); };
-	T.stats = function () { return section([row([col([node('stats')])])], { bg: '#0f172a', color: '#fff', pt: 56, pb: 56 }); };
+	T.stats = function () { return section([row([col([node('stats', {}, { color: '#ffffff' })])])], { bg: '#0f172a', color: '#fff', pt: 56, pb: 56 }); };
 	T.faq = function () { return section([row([col([node('heading', { text: 'Frequently asked questions', tag: 'h2' }, { align: 'center' }), node('accordion')])])], {}, { width: 'narrow' }); };
 	T.pricing = function () { return section([row([col([node('heading', { text: 'Simple, fair prices', tag: 'h2' }, { align: 'center', mb: 24 })])]), row([col([node('pricing', { title: 'Starter', price: 'KSh 15,000' })]), col([node('pricing', { hot: '1', badge: 'Most popular' })]), col([node('pricing', { title: 'Organisations', price: 'Custom', period: 'quote' })])], { gap: 24 })], { bg: '#f8fafc' }); };
 	T.testimonials = function () { return section([row([col([node('heading', { text: 'What our students say', tag: 'h2' }, { align: 'center', mb: 20 }), node('testimonials')])])], { bg: '#f8fafc' }); };

@@ -402,7 +402,7 @@
 		if (s.pos) { add(d, 'position', s.pos); add(d, 'top', px(s.top)); add(d, 'left', px(s.left)); add(d, 'right', px(s.right)); add(d, 'bottom', px(s.bottom)); }
 		add(d, 'width', px(s.w)); add(d, 'max-width', px(s.mw)); if (s.mw) add(d, 'margin-left', 'auto'), add(d, 'margin-right', 'auto');
 		if (s.flex) { add(d, 'display', s.flex); add(d, 'flex-direction', s.fdir); add(d, 'flex-wrap', s.fwrap); add(d, 'justify-content', s.jc); add(d, 'align-items', s.ai); add(d, 'gap', px(s.fgap)); if (s.flex === 'grid') add(d, 'grid-template-columns', s.gcols ? 'repeat(' + s.gcols + ',minmax(0,1fr))' : null); }
-		if (t !== 'button' && t !== 'navbar') add(d, 'color', s.color);
+		if (t !== 'button' && t !== 'navbar') { add(d, 'color', s.color); if (s.color && (t === 'counter' || t === 'stats')) add(d, '--nc', s.color); }
 		add(d, 'padding-top', px(s.pt)); add(d, 'padding-bottom', px(s.pb));
 		if (s.px !== undefined && s.px !== '') { add(d, 'padding-left', px(s.px)); add(d, 'padding-right', px(s.px)); }
 		add(d, 'margin-top', px(s.mt)); add(d, 'margin-bottom', px(s.mb));

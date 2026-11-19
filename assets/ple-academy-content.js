@@ -211,7 +211,7 @@
 			tips: ['Three or four numbers is enough.', 'Count up when they appear: movement draws the eye.', 'Use a contrasting band so the numbers stand out.'],
 			designs: [
 				{ id: 'st-band', name: 'Dark stats band', demo: 1, note: 'Four counting numbers on a dark band.', build: function () {
-					return [S([R([K([N('stats')])])], { bg: INK, color: '#ffffff', pt: 56, pb: 56 })];
+					return [S([R([K([N('stats', {}, { color: '#ffffff' })])])], { bg: INK, color: '#ffffff', pt: 56, pb: 56 })];
 				} },
 				{ id: 'st-counters', name: 'Counters with icons', note: 'Icon, number and label in four columns.', build: function () {
 					var c = function (ic, num, suf, l) { return K([N('icon', { icon: ic }, { align: 'center' }), N('counter', { num: num, suffix: suf, label: l }, { align: 'center' })]); };

@@ -246,6 +246,7 @@
 		this.token.cancel = true; this.dead = true;
 		clearInterval(this.alive); clearInterval(this.pollT);
 		[this.el, this.cur, this.ring, this.tip].forEach(function (x) { if (x && x.parentNode) x.remove(); });
+		if (this.keyFn) document.removeEventListener('keydown', this.keyFn, true);
 	};
 	GP.head = function (badge, extra) {
 		var self = this, o = this.o, n = this.steps.length;
@@ -438,7 +439,7 @@
 		if (ul.children.length) this.el.appendChild(ul);
 		var ctl = h('div', { class: 'ag-ctl' });
 		ctl.appendChild(h('button', { type: 'button', title: 'Previous step', 'aria-label': 'Previous step', disabled: this.i === 0 ? true : null, onclick: function () { self.jump(self.i - 1); } }, '&#9664;&#9664;'));
-		ctl.appendChild(h('button', { type: 'button', class: 'ag-play', title: this.paused ? 'Play' : 'Pause', 'aria-label': this.paused ? 'Play' : 'Pause', onclick: function () { self.paused = !self.paused; self.drawWatch(); } }, this.paused ? '&#9654; Play' : '&#10074;&#10074; Pause'));
+		ctl.appendChild(h('button', { type: 'button', class: 'ag-play', title: (this.paused ? 'Play' : 'Pause') + ' (Space)', 'aria-label': this.paused ? 'Play' : 'Pause', onclick: function () { self.paused = !self.paused; self.drawWatch(); } }, this.paused ? '&#9654; Play' : '&#10074;&#10074; Pause'));
 		ctl.appendChild(h('button', { type: 'button', title: 'Next step', 'aria-label': 'Next step', disabled: this.i >= n - 1 ? true : null, onclick: function () { self.jump(self.i + 1, true); } }, '&#9654;&#9654;'));
 		ctl.appendChild(h('button', { type: 'button', class: 'ag-spd', title: 'Speed', onclick: function () { self.speed = self.speed >= 4 ? 1 : self.speed * 2; self.drawWatch(); } }, self.speed + '&times;'));
 		this.el.appendChild(ctl);
@@ -468,7 +469,18 @@
 		});
 		ed.commit(); ed.renderAll();
 	};
-	GP.run = function () { this.drawWatch(); this.loop(); };
+	GP.run = function () {
+		var self = this;
+		this.keyFn = function (e) {
+			if (self.dead) return document.removeEventListener('keydown', self.keyFn, true);
+			var t = e.target; if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+			if (e.key === ' ' || e.key === 'k') { e.preventDefault(); e.stopPropagation(); self.paused = !self.paused; self.drawWatch(); }
+			else if (e.key === 'ArrowRight' && e.shiftKey) { e.preventDefault(); self.jump(self.i + 1, true); }
+			else if (e.key === 'ArrowLeft' && e.shiftKey) { e.preventDefault(); self.jump(self.i - 1); }
+		};
+		document.addEventListener('keydown', this.keyFn, true);
+		this.drawWatch(); this.loop();
+	};
 	GP.loop = async function () {
 		var self = this, tok = this.token;
 		try {
@@ -804,7 +816,7 @@
 				if (mode === 'guided' && saved && saved < steps.length && pr.tree.children.length) { /* resume */ } else saved = 0;
 				var reset = { text: 'Start again on an empty page', on: function (gd) { if (!confirm('Clear this page and start again?')) return; gd.destroy(); ed.tree = C.emptyPage(); ed.commit(); ed.renderAll(); ed.save(); x.store.set('lab-step:' + key, 0); setTimeout(function () { x.route(); }, 600); } };
 				var g2 = new Guide(ed, steps, mode === 'guided' ? 'do' : 'practice', {
-					title: d.name, start: saved, target: targetFn,
+					title: d.name, start: saved, target: targetFn, extra: [reset],
 					onStep: function (i) { x.store.set('lab-step:' + key, i); },
 					onExit: function () { ed.save(); location.hash = back; },
 					onDone: function () { ed.save(); x.store.set('lab-step:' + key, 0); mark(d.id, { guided: 1, score: 100 }); },
