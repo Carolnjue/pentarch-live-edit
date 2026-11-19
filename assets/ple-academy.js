@@ -223,7 +223,7 @@
 	/* ================================================================ guide player */
 	function Guide(ed, steps, mode, opts) {
 		this.ed = ed; this.steps = steps; this.mode = mode; this.o = opts || {};
-		this.i = this.o.start || 0; this.speed = 1; this.paused = false; this.snaps = []; this.token = { cancel: false };
+		this.i = this.o.start || 0; this.speed = mode === 'watch' ? (+(X() && X().store.get('lab-speed')) || 1) : 1; this.paused = false; this.snaps = []; this.token = { cancel: false };
 		this.saved = false;
 		if (g.PLEAcademy) g.PLEAcademy.current = this;
 		var self = this, os = ed.save;
@@ -446,7 +446,7 @@
 		ctl.appendChild(h('button', { type: 'button', title: 'Previous step', 'aria-label': 'Previous step', disabled: this.i === 0 ? true : null, onclick: function () { self.jump(self.i - 1); } }, '&#9664;&#9664;'));
 		ctl.appendChild(h('button', { type: 'button', class: 'ag-play', title: (this.paused ? 'Play' : 'Pause') + ' (Space)', 'aria-label': this.paused ? 'Play' : 'Pause', onclick: function () { self.paused = !self.paused; self.drawWatch(); } }, this.paused ? '&#9654; Play' : '&#10074;&#10074; Pause'));
 		ctl.appendChild(h('button', { type: 'button', title: 'Next step', 'aria-label': 'Next step', disabled: this.i >= n - 1 ? true : null, onclick: function () { self.jump(self.i + 1, true); } }, '&#9654;&#9654;'));
-		ctl.appendChild(h('button', { type: 'button', class: 'ag-spd', title: 'Speed', onclick: function () { self.speed = self.speed >= 4 ? 1 : self.speed * 2; self.drawWatch(); } }, self.speed + '&times;'));
+		ctl.appendChild(h('button', { type: 'button', class: 'ag-spd', title: 'Speed', onclick: function () { self.speed = self.speed >= 4 ? 1 : self.speed * 2; X().store.set('lab-speed', self.speed); self.drawWatch(); } }, self.speed + '&times;'));
 		this.el.appendChild(ctl);
 	};
 	GP.jump = function (to, finishCurrent) {
