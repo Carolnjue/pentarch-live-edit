@@ -430,6 +430,20 @@
 		if (global.PLE_LAB && !pro.client) {
 			box.appendChild(h('h4', { class: 'pe-h' }, 'Designer sections'));
 			if (pro.studio) box.appendChild(h('p', { class: 'pe-hint' }, 'Point at one to preview it. Want to learn how each is built? <a href="' + esc(pro.studio) + '#/lab" target="_blank" rel="noopener">Open the Design Lab</a>.'));
+			if (global.PLE_LAB.starters && self.tree.props && !self.tree.props.native) {
+				var sd = h('details', { class: 'pe-dsg', open: self._dsgOpen === 'pages' ? true : null });
+				sd.appendChild(h('summary', null, 'Full pages <small>' + global.PLE_LAB.starters.length + '</small>'));
+				sd.addEventListener('toggle', function () { if (sd.open) self._dsgOpen = 'pages'; });
+				var sg = h('div', { class: 'pe-tpls' });
+				global.PLE_LAB.starters.forEach(function (st) {
+					sg.appendChild(h('button', { type: 'button', class: 'pe-tile pe-tpl', title: st.note, onclick: function () {
+						if (self.tree.children.length && !confirm('Add the whole "' + st.name + '" page below your current content?')) return;
+						var secs = st.tree().children; secs.forEach(function (sc) { C.reId(sc); self.tree.children.push(sc); });
+						if (secs.length) self.after(secs[0].id);
+					} }, C.icon(st.icon, 22) + '<span>' + esc(st.name) + '</span>'));
+				});
+				sd.appendChild(sg); box.appendChild(sd);
+			}
 			global.PLE_LAB.topics.forEach(function (tp) {
 				var dt = h('details', { class: 'pe-dsg', open: self._dsgOpen === tp.id ? true : null });
 				dt.appendChild(h('summary', null, esc(tp.name) + ' <small>' + tp.designs.length + '</small>'));

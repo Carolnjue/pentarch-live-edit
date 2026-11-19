@@ -349,5 +349,14 @@
 		}
 	];
 
-	g.PLE_LAB = { topics: TOPICS, pic: pic };
+	/* Full starting websites assembled from the designs above. */
+	var byId = function (id) { var out = null; TOPICS.forEach(function (t) { t.designs.forEach(function (d) { if (d.id === id) out = d; }); }); return out; };
+	var page = function (ids) { var p0 = C.emptyPage(); ids.forEach(function (id) { var d = byId(id); if (d) d.build().forEach(function (sc) { p0.children.push(sc); }); }); return p0; };
+	var STARTERS = [
+		{ id: 'school', name: 'Training school (modern)', note: 'Dark menu, photo hero, courses, journey, numbers, reviews and an application form', icon: 'award', ids: ['nav-dark', 'hero-photo', 'svc-icons', 'jr-steps', 'st-band', 'ts-slider', 'cta-band', 'ct-form', 'ft-columns'] },
+		{ id: 'business', name: 'Service business (modern)', note: 'Split hero, picture cards, about, pricing, FAQ and contact', icon: 'card', ids: ['nav-classic', 'hero-split', 'svc-pictures', 'ab-split', 'pr-three', 'fq-simple', 'ct-map', 'ft-cta'] },
+		{ id: 'creative', name: 'Creative studio (bold)', note: 'Gradient hero, gallery, team, stats, testimonials and a dark contact band', icon: 'star', ids: ['nav-dark', 'hero-gradient', 'gl-grid', 'tm-cards', 'st-counters', 'ts-cards', 'ct-dark', 'ft-centre'] }
+	].map(function (st) { st.tree = function () { return page(st.ids); }; return st; });
+
+	g.PLE_LAB = { topics: TOPICS, pic: pic, starters: STARTERS };
 })(window);
