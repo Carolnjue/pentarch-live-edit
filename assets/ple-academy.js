@@ -706,6 +706,11 @@
 		startCards.forEach(function (c, i) {
 			start.appendChild(h('a', { class: 'al-sc' + (i === 0 ? ' first' : ''), href: '#/' + c[0] }, '<span class="al-sci">' + icon(c[3], 22) + '</span><b>' + c[1] + '</b><small>' + c[2] + '</small>' + chip(c[4], /Done|Watched/.test(c[4]) ? 'ok' : '')));
 		});
+		var last = x.store.get('lab-last');
+		if (last && last.href && Date.now() - last.at < 30 * 864e5) {
+			var verb = { watch: 'Watch again', guided: 'Continue building', practise: 'Continue practising', brief: 'Continue the brief' }[last.mode] || 'Continue';
+			p.appendChild(h('a', { class: 'al-promo', href: last.href }, '<span class="al-sci">' + icon('arrow', 22) + '</span><div><b>Pick up where you left off</b><small>' + esc(last.name) + '</small></div><span class="st-btn sm pri">' + verb + '</span>'));
+		}
 		p.appendChild(h('h2', { class: 'st-h2' }, 'Start here'));
 		p.appendChild(start);
 		var hd = h('div', { class: 'al-hrow' }, '<h2 class="st-h2">Design lessons</h2><span class="al-count">' + doneN + ' of ' + all + ' designs built</span>');
@@ -714,7 +719,7 @@
 		topics().forEach(function (t) {
 			var n = t.designs.length, dn = t.designs.filter(function (d) { var e = stateOf(d); return e.done || e.guided; }).length;
 			var a = h('a', { class: 'al-tc', href: '#/lab/' + t.id, style: '--tc:' + t.color });
-			a.innerHTML = '<span class="al-tci">' + icon(t.icon, 22) + '</span><b>' + esc(t.name) + '</b><small>' + esc(t.blurb) + '</small><span class="al-tcm"><span>' + n + ' designs &middot; ' + t.designs.filter(function (d) { return d.demo; }).length + ' demos</span><i style="--p:' + Math.round(100 * dn / n) + '%"></i></span>';
+			a.innerHTML = '<span class="al-tci">' + icon(t.icon, 22) + '</span><b>' + esc(t.name) + '</b><small>' + esc(t.blurb) + '</small><span class="al-tcm"><span>' + n + ' designs &middot; ' + (function (k) { return k + (k === 1 ? ' demo' : ' demos'); })(t.designs.filter(function (d) { return d.demo; }).length) + '</span><i style="--p:' + Math.round(100 * dn / n) + '%"></i></span>';
 			grid.appendChild(a);
 		});
 		p.appendChild(grid);
@@ -756,6 +761,8 @@
 		var t = topicById(id); if (!t) return X().go404();
 		var x = X(), p = x.page(t.name, t.blurb);
 		var back = h('a', { class: 'al-back', href: '#/lab' }, '&larr; Design Lab'); p.insertBefore(back, p.firstChild);
+		var bn = t.designs.filter(function (d) { var e = stateOf(d); return e.done || e.guided; }).length;
+		p.appendChild(h('div', { class: 'al-tprog', style: '--tc:' + t.color }, '<span>' + bn + ' of ' + t.designs.length + ' built</span><i><b style="width:' + Math.round(100 * bn / t.designs.length) + '%"></b></i>'));
 		var tips = h('div', { class: 'al-tips', style: '--tc:' + t.color }, '<h3>' + icon('star', 16) + ' What makes a good one</h3><ol>' + t.tips.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>');
 		p.appendChild(tips);
 		var demos = t.designs.filter(function (d) { return d.demo; }), prac = t.designs.filter(function (d) { return !d.demo; });
@@ -779,6 +786,8 @@
 		c.appendChild(pv);
 		var b = h('div', { class: 'al-db' });
 		b.appendChild(h('div', { class: 'al-dt' }, '<b>' + esc(d.name) + '</b>' + (d.demo ? chip('Demo') : chip('Practice', 'pr')) + (e.done || e.guided ? chip(icon('check', 12) + ' Built' + (e.score ? ' ' + e.score + '%' : ''), 'ok') : (e.watched ? chip('Watched', 'w') : ''))));
+		var gstep = X().store.get('lab-step:lab-' + d.id + '-g') || 0;
+		if (gstep && !(e.done || e.guided)) b.querySelector('.al-dt').insertAdjacentHTML('beforeend', chip('In progress', 'w'));
 		b.appendChild(h('p', null, esc(d.note)));
 		var acts = h('div', { class: 'al-da' });
 		if (d.demo) {
@@ -811,6 +820,7 @@
 	function runDesign(tid, did, mode) {
 		var hit = designById(did); if (!hit || hit.t.id !== tid) return X().go404();
 		var t = hit.t, d = hit.d, x = X(), back = '#/lab/' + t.id;
+		x.store.set('lab-last', { href: location.hash, name: d.name, mode: mode, at: Date.now() });
 		var target = pageOf(d.build());
 		var steps = recipe(target, 0);
 		var idx = t.designs.indexOf(d), nextD = t.designs[idx + 1];
@@ -881,6 +891,7 @@
 	}
 	function runStart() {
 		var x = X();
+		x.store.set('lab-last', { href: '#/start', name: 'Get started tour', mode: 'guided', at: Date.now() });
 		boot('Opening your first website\u2026');
 		labProject('lab-start', 'My first website', C.starterPage()).then(function (pr) {
 			x.openEditor(pr, { exitTo: '#/lab', exitLabel: 'Lab', sideNote: '<b>Get started:</b> follow the guide card. It moves on by itself when you finish each step.', onReady: function (ed) {
@@ -944,6 +955,7 @@
 	}
 	function runMakeover(mode) {
 		var x = X();
+		x.store.set('lab-last', { href: '#/makeover/' + mode, name: 'Template makeover', mode: mode === 'do' ? 'guided' : 'watch', at: Date.now() });
 		if (mode === 'watch') {
 			var pr = { id: 'demo', title: 'Makeover demo', tree: C.starterPage(), updated: Date.now() / 1000 + 60 };
 			x.openEditor(pr, { noSave: true, noShare: true, exitTo: '#/lab', exitLabel: 'Lab', sideNote: '<b>Makeover demo:</b> from the plain template to a unique website. Pause or speed it up on the card.', onReady: function (ed) {
@@ -993,6 +1005,7 @@
 	function runBrief(id) {
 		var b = BRIEFS.filter(function (x) { return x.id === id; })[0]; if (!b) return X().go404();
 		var x = X();
+		x.store.set('lab-last', { href: '#/brief/' + b.id, name: 'Client brief: ' + b.name, mode: 'brief', at: Date.now() });
 		boot('Opening the client brief\u2026');
 		labProject('brief-' + b.id, b.name, C.emptyPage()).then(function (pr) {
 			x.openEditor(pr, { exitTo: '#/lab', exitLabel: 'Lab', sideNote: '<b>Client brief:</b> ' + esc(b.brief) + ' Use your saved parts from <b>My parts</b> below, or build from scratch.', onReady: function (ed) {
