@@ -7,7 +7,7 @@
 	var RM = w.matchMedia && w.matchMedia('(prefers-reduced-motion: reduce)').matches;
 	var $$ = function (s, r) { return [].slice.call((r || d).querySelectorAll(s)); };
 	var num = function (v, def) { v = parseFloat(v); return isNaN(v) ? def : v; };
-	var dev = function () { var x = w.innerWidth; return x <= 767 ? 'm' : x <= 1024 ? 't' : 'd'; };
+	var dev = function () { var x = w.innerWidth, b = w.PLE_BP || { t: 1024, m: 767 }; return x <= b.m ? 'm' : x <= b.t ? 't' : 'd'; };
 	var onDev = function (el, attr) { var v = el.getAttribute(attr); return !v || v.indexOf(dev()) > -1; };
 	var io = function (cb, opts) { return 'IntersectionObserver' in w ? new IntersectionObserver(cb, opts || { threshold: 0.15, rootMargin: '0px 0px -8% 0px' }) : null; };
 	var R = {};
@@ -415,9 +415,33 @@
 			});
 		});
 	};
+	/* Display conditions: show an element only to some visitors, dates or links. */
+	R.conditions = function (root) {
+		if (EDIT) return;
+		var b = d.body, now = Date.now(), qs = new URLSearchParams(location.search);
+		$$('[data-fx-ifu],[data-fx-ifrole],[data-fx-iffrom],[data-fx-ifto],[data-fx-ifparam]', root).forEach(function (el) {
+			var ok = true, v;
+			if ((v = el.getAttribute('data-fx-ifu'))) ok = ok && ((v === 'in') === b.classList.contains('logged-in'));
+			if ((v = el.getAttribute('data-fx-ifrole'))) ok = ok && v.split(/[\s,]+/).some(function (r) { return r && b.classList.contains('pl-role-' + r); });
+			if ((v = el.getAttribute('data-fx-iffrom')) && !isNaN(Date.parse(v))) ok = ok && now >= Date.parse(v);
+			if ((v = el.getAttribute('data-fx-ifto')) && !isNaN(Date.parse(v))) ok = ok && now <= Date.parse(v);
+			if ((v = el.getAttribute('data-fx-ifparam'))) { var kv = v.split('='); ok = ok && (kv.length > 1 ? qs.get(kv[0].trim()) === kv.slice(1).join('=').trim() : qs.has(kv[0].trim())); }
+			if (!ok) el.remove(); else el.classList.add('fx-if-ok');
+		});
+	};
+	/* Live post lists: filter buttons and search. */
+	R.posts = function (root) {
+		$$('[data-posts]', root).forEach(function (box) {
+			if (box._pl) return; box._pl = 1;
+			var f = '', q = '', cards = $$('.pl-post', box);
+			var apply = function () { cards.forEach(function (c) { var show = (!f || (' ' + c.getAttribute('data-terms') + ' ').indexOf(' ' + f + ' ') > -1) && (!q || c.getAttribute('data-title').indexOf(q) > -1 || c.textContent.toLowerCase().indexOf(q) > -1); c.hidden = !show; }); };
+			$$('.pl-filter button', box).forEach(function (bt) { bt.addEventListener('click', function () { $$('.pl-filter button', box).forEach(function (x) { x.classList.toggle('on', x === bt); }); f = bt.getAttribute('data-f'); apply(); }); });
+			var s = box.querySelector('.pl-fsearch'); if (s) s.addEventListener('input', function () { q = s.value.trim().toLowerCase(); apply(); });
+		});
+	};
 	R.init = function (root) {
 		root = root || d;
-		['textfx', 'entrance', 'scrollfx', 'sticky', 'pointer', 'counters', 'typing', 'countdown', 'sliders', 'tabs', 'lightbox', 'popups', 'compare', 'hotspots', 'toc', 'backtotop', 'share', 'lottie', 'particles', 'hscroll', 'forms'].forEach(function (k) { try { R[k](root); } catch (e) { if (w.console) console.warn('PLE ' + k, e); } });
+		['conditions', 'posts', 'textfx', 'entrance', 'scrollfx', 'sticky', 'pointer', 'counters', 'typing', 'countdown', 'sliders', 'tabs', 'lightbox', 'popups', 'compare', 'hotspots', 'toc', 'backtotop', 'share', 'lottie', 'particles', 'hscroll', 'forms'].forEach(function (k) { try { R[k](root); } catch (e) { if (w.console) console.warn('PLE ' + k, e); } });
 		try { R.cursor(); } catch (e) { }
 	};
 	w.PLERun = R;

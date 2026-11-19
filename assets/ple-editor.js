@@ -437,7 +437,17 @@
 			if (cur.node.type === 'block') { var b = cur.node; var inn = b.children.length === 1 && b.children[0].type === 'el' && C.isContainer(b.children[0]) ? b.children[0] : b; return { parent: inn, index: inn.children.length }; }
 			return { parent: cur.parent, index: cur.index + 1 };
 		}
-		if (C.isContainer(hit.node) && hit.node.type !== 'page') return { parent: hit.node, index: hit.node.children.length };
+		if (C.isContainer(hit.node) && hit.node.type !== 'page') {
+			/* Go down through single wrappers (section > container > content) to where content lives. */
+			var target = hit.node, self2 = this;
+			var real = function (n) { return (n.children || []).filter(function (c) { return !(c.type === 'cmt' || (c.type === 'el' && /^(style|script)$/.test(c.props.tag))); }); };
+			while (true) {
+				var kids = real(target);
+				if (kids.length === 1 && C.isContainer(kids[0]) && kids[0].type === 'el') target = kids[0]; else break;
+			}
+			if (this.role(target) === 'row') { var rh = C.find(t, target.id); return { parent: rh.parent, index: rh.index + 1 }; }
+			return { parent: target, index: target.children.length };
+		}
 		return { parent: hit.parent, index: hit.index + 1 };
 	};
 	P.parentFor = function (type) {
@@ -595,7 +605,7 @@
 			if (self.collapsed[n.id] === undefined && C.NATIVE[n.type]) self.collapsed[n.id] = depth >= 2 && !(n.type === 'el' && /^div$/.test(n.props.tag) && depth < 2);
 			var open = !self.collapsed[n.id];
 			var li = h('li', { role: 'treeitem', 'aria-expanded': kids.length ? String(open) : null });
-			var rowEl = h('div', { class: 'pe-node t-' + n.type + (self.sel === n.id ? ' on' : ''), style: 'padding-left:' + (8 + depth * 14) + 'px', draggable: self.isPhone() ? null : 'true' });
+			var rowEl = h('div', { 'data-id': n.id, class: 'pe-node t-' + n.type + (self.sel === n.id ? ' on' : '') + (self.multi && self.multi.indexOf(n.id) > -1 ? ' multi' : ''), style: 'padding-left:' + (8 + depth * 14) + 'px', draggable: self.isPhone() ? null : 'true' });
 			rowEl.appendChild(h('button', { type: 'button', class: 'pe-tw' + (kids.length ? '' : ' none'), 'aria-label': open ? 'Collapse' : 'Expand', onclick: function (e) { e.stopPropagation(); self.collapsed[n.id] = open; self.renderPanel(); } }, kids.length ? (open ? '&#9662;' : '&#9656;') : ''));
 			rowEl.appendChild(h('span', { class: 'pe-ni' }, C.icon(self.roleIcon(n), 15)));
 			rowEl.appendChild(h('span', { class: 'pe-nl', text: self.label(n) }));
@@ -879,7 +889,7 @@
 				var clr = h('button', { type: 'button', class: 'pe-x', title: 'Clear', onclick: function () { tx.value = ''; set(''); } }, '&times;');
 				row.appendChild(pick); row.appendChild(tx); row.appendChild(clr); wrap.appendChild(row);
 				var sw = h('div', { class: 'pe-sw' });
-				SWATCHES.concat([this.tree.props.accent]).forEach(function (c) { sw.appendChild(h('button', { type: 'button', style: 'background:' + c, title: c, 'aria-label': c, onclick: function () { tx.value = c; pick.value = c; set(c); } })); });
+				(C.KIT_COLORS || []).concat(SWATCHES, [this.tree.props.accent]).filter(function (c, i, a) { return c && a.indexOf(c) === i; }).slice(0, 18).forEach(function (c) { sw.appendChild(h('button', { type: 'button', style: 'background:' + c, title: c, 'aria-label': c, onclick: function () { tx.value = c; pick.value = c; set(c); } })); });
 				wrap.appendChild(sw);
 				break;
 			case 'num':

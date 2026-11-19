@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
 
 final class PLE2 {
 
-	const VERSION  = '2.2.0';
+	const VERSION  = '2.3.0';
 	const NS       = 'ple/v2';
 	const PROJECT  = 'ple_project';
 	const KLASS    = 'ple_class';
@@ -207,9 +207,10 @@ final class PLE2 {
 		wp_enqueue_script( 'ple-core', self::asset( 'ple-core.js' ), array(), null, true );
 		wp_enqueue_script( 'ple-widgets', self::asset( 'ple-widgets.js' ), array( 'ple-core' ), null, true );
 		wp_enqueue_script( 'ple-editor', self::asset( 'ple-editor.js' ), array( 'ple-widgets' ), null, true );
-		wp_enqueue_script( 'ple-builder', self::asset( 'ple-builder.js' ), array( 'ple-editor', 'media-editor' ), null, true );
+		wp_enqueue_script( 'ple-pro', self::asset( 'ple-pro.js' ), array( 'ple-editor' ), null, true );
+		wp_enqueue_script( 'ple-builder', self::asset( 'ple-builder.js' ), array( 'ple-pro', 'media-editor' ), null, true );
 		wp_localize_script(
-			'ple-builder',
+			'ple-pro',
 			'PLE_BUILDER',
 			array(
 				'id'      => $id,
@@ -225,6 +226,13 @@ final class PLE2 {
 				'status'  => $post->post_status,
 				'canCode' => current_user_can( 'unfiltered_html' ),
 				'runtime' => self::runtime_urls(),
+				'pro'     => class_exists( 'PLE_Pro' ) ? array(
+					'rest'     => esc_url_raw( rest_url( self::NS . '/' ) ),
+					'kit'      => PLE_Pro::kit(),
+					'types'    => PLE_Pro::types(),
+					'client'   => PLE_Pro::is_client(),
+					'canTheme' => current_user_can( 'edit_theme_options' ),
+				) : null,
 			)
 		);
 		nocache_headers();
@@ -260,7 +268,16 @@ final class PLE2 {
 		if ( ! $id || ! get_post_meta( $id, '_ple_on', true ) || post_password_required( $id ) ) {
 			return $content;
 		}
-		$html = get_post_meta( $id, '_ple_html', true );
+		static $busy = false;
+		if ( $busy ) {
+			return $content;
+		}
+		$html = (string) get_post_meta( $id, '_ple_html', true );
+		if ( false !== strpos( $html, '[ple' ) ) {
+			$busy = true;
+			$html = do_shortcode( $html );
+			$busy = false;
+		}
 		return '' !== $html ? $html : $content;
 	}
 

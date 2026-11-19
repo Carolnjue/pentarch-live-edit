@@ -477,11 +477,18 @@
 		'.ple-nav-t{display:none}.ple-nav-h{display:none;cursor:pointer;width:40px;height:40px;flex-direction:column;justify-content:center;gap:5px;align-items:center}.ple-nav-h i{display:block;width:24px;height:2px;background:currentColor;border-radius:2px}',
 		'@media(max-width:767px){.ple-nav-h{display:flex}.ple-nav-l{display:none;position:absolute;left:0;right:0;top:100%;flex-direction:column;align-items:stretch;gap:0;background:var(--nb,#fff);box-shadow:0 12px 24px rgba(0,0,0,.12);padding:8px 24px 20px;z-index:60}.ple-nav-l a{padding:12px 0;border-bottom:1px solid rgba(127,127,127,.15)}.ple-nav-l a.ple-nav-c{text-align:center;margin-top:12px;border:0}.ple-nav-t:checked~.ple-nav-l{display:flex}}',
 		'@media(max-width:1024px){.ple-stack-tablet{grid-template-columns:1fr!important}}',
-		'@media(max-width:767px){.ple-stack-mobile,.ple-stack-tablet{grid-template-columns:1fr!important}}'
+		'@media(max-width:767px){.ple-stack-mobile,.ple-stack-tablet{grid-template-columns:1fr!important}}',
+		'.ple-column{container-type:inline-size;min-width:0}@container (max-width:520px){.ple-column .ple-row.ple-stack-mobile,.ple-column .ple-row.ple-stack-tablet{grid-template-columns:1fr!important}}'
 	].join('\n');
 
 	/* Motion settings become data-fx-* attributes that ple-runtime.js reads. */
-	var FX_KEYS = ['in', 'dur', 'delay', 'once', 'text', 'stagger', 'hover', 'loop', 'scroll', 'speed', 'devices', 'sticky', 'offset', 'hide', 'sd'];
+	var FX_KEYS = ['in', 'dur', 'delay', 'once', 'text', 'stagger', 'hover', 'loop', 'scroll', 'speed', 'devices', 'sticky', 'offset', 'hide', 'sd', 'ifu', 'ifrole', 'iffrom', 'ifto', 'ifparam'];
+	/* Site-wide breakpoints (set from the site kit) replace the default 1024px / 767px. */
+	var bpx = function (css) {
+		var b = global.PLECore && global.PLECore.BP;
+		if (!b || (+b.t === 1024 && +b.m === 767)) return css;
+		return css.replace(/max-width:\s?1024px/g, 'max-width:' + b.t + 'px').replace(/min-width:\s?1025px/g, 'min-width:' + (+b.t + 1) + 'px').replace(/max-width:\s?767px/g, 'max-width:' + b.m + 'px').replace(/min-width:\s?768px/g, 'min-width:' + (+b.m + 1) + 'px');
+	};
 	var fxAttrs = function (n) {
 		var fx = (n.props && n.props.fx) || {}, out = '';
 		FX_KEYS.forEach(function (k) { var v = fx[k]; if (v !== undefined && v !== null && v !== '') out += ' data-fx-' + k + '="' + escAttr(v) + '"'; });
@@ -672,9 +679,9 @@
 		});
 		if (native) {
 			var nc = (hasWidgets ? BASE_CSS + '\n' + css.join('\n') + '\n' : '') + d.join('\n') + (t.length ? '\n@media(max-width:1024px){' + t.join('') + '}' : '') + (m.length ? '\n@media(max-width:767px){' + m.join('') + '}' : '') + (hide.length ? '\n' + hide.join('\n') : '');
-			return { html: body, css: nc.trim(), widgets: hasWidgets };
+			return { html: body, css: bpx(nc.trim()), widgets: hasWidgets };
 		}
-		return { html: '<div class="ple-page">' + body + '</div>', css: BASE_CSS + '\n' + out.join('\n') + '\n' + hide.join('\n') + (pp.customCss ? '\n' + pp.customCss : '') };
+		return { html: '<div class="ple-page">' + body + '</div>', css: bpx(BASE_CSS + '\n' + out.join('\n') + '\n' + hide.join('\n')) + (pp.customCss ? '\n' + pp.customCss : '') };
 	};
 	var fullDoc = function (tree, title) {
 		var r = render(tree);
@@ -704,6 +711,6 @@
 		walk: walk, find: find, reId: reId, accepts: accepts, isContainer: isContainer, isLeafEl: isLeafEl, NATIVE: NATIVE, VOID: VOID,
 		parseHTML: parseHTML, parseNative: parseNative, serializeNative: serializeNative, selOf: selOf, def: def, DIVIDERS: DIVIDERS, FX_KEYS: FX_KEYS,
 		T: T, TEMPLATES: TEMPLATES, STYLE_BOX: STYLE_BOX, STYLE_TEXT: STYLE_TEXT,
-		render: render, fullDoc: fullDoc, pretty: pretty, BASE_CSS: BASE_CSS
+		render: render, fullDoc: fullDoc, pretty: pretty, BASE_CSS: BASE_CSS, bpx: bpx
 	};
 })(window);
