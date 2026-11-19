@@ -1126,7 +1126,7 @@
 				set(navW, 'navbar', 'content', 'brand', 'Kilele Academy', { free: 1, from: orig(navW, 'content', 'brand') }),
 				set(navW, 'navbar', 'content', 'links', 'Home|#\nCourses|#services\nAbout|#about\nContact|#contact', { free: 1, from: orig(navW, 'content', 'links') }),
 				set(navW, 'navbar', 'content', 'cta', 'Apply now', { free: 1, from: orig(navW, 'content', 'cta') }),
-				set(navW, 'navbar', 'style', 'bg', '#0b1730'), set(navW, 'navbar', 'style', 'color', '#ffffff'), set(navW, 'navbar', 'style', 'ac', '#f59e0b')] },
+				set(navW, 'navbar', 'style', 'bg', '#0b1730'), set(navW, 'navbar', 'style', 'color', '#ffffff'), set(navW, 'navbar', 'style', 'ac', '#c2410c')] },
 			{ title: 'Keep the menu in reach', say: 'In <b>Motion</b>, make the menu stick to the top while people scroll.', ops: [set(navW, 'navbar', 'motion', 'sticky', 'top')] },
 			{ title: 'A real photo in the hero', say: 'Select the hero section (tap the picture area around the text). In <b>Style</b>, use a real photo with a strong dark overlay so the words stay readable.', ops: [
 				set(sec(heroS), 'section', 'style', 'bgImg', pic('team'), { free: 1, from: orig(sec(heroS), 'style', 'bgImg') }), set(sec(heroS), 'section', 'style', 'overlay', 'rgba(0,0,0,.6)'), set(sec(heroS), 'section', 'style', 'minH', 85)] },

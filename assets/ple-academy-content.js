@@ -83,15 +83,15 @@
 			avoid: ['Ten links in the menu: people give up looking.', 'A logo so big it pushes the page down.', 'A menu that disappears when people scroll on long pages.'],
 			designs: [
 				{ id: 'nav-classic', name: 'Clean white menu', demo: 1, note: 'Logo left, links in the middle, a button on the right. Sticks when you scroll.', build: function () {
-					return [S([R([K([N('navbar', { brand: 'Kilele Academy', links: 'Home|#\nCourses|#courses\nAbout|#about\nContact|#contact', cta: 'Apply now', ctaHref: '#apply' }, { shadow: '0 2px 8px rgba(0,0,0,.08)' }, { sticky: 'top' })])])], { pt: 0, pb: 0, px: 0 }, { tag: 'header', width: 'full' })];
+					return [S([R([K([N('navbar', { brand: 'Kilele Academy', links: 'Home|#\nCourses|#courses\nAbout|#about\nContact|#contact', cta: 'Apply now', ctaHref: '#apply' }, { shadow: '0 2px 8px rgba(0,0,0,.08)', ac: '#1d4ed8' }, { sticky: 'top' })])])], { pt: 0, pb: 0, px: 0 }, { tag: 'header', width: 'full' })];
 				} },
 				{ id: 'nav-dark', name: 'Dark menu with a bright button', demo: 1, note: 'A confident dark header that makes the button glow.', build: function () {
-					return [S([R([K([N('navbar', { brand: 'Kilele Academy', links: 'Home|#\nCourses|#courses\nStories|#stories\nContact|#contact', cta: 'WhatsApp us', ctaHref: 'https://wa.me/254700000000' }, { bg: INK, color: '#ffffff', ac: GOLD }, { sticky: 'top', hide: '1' })])])], { pt: 0, pb: 0, px: 0 }, { tag: 'header', width: 'full' })];
+					return [S([R([K([N('navbar', { brand: 'Kilele Academy', links: 'Home|#\nCourses|#courses\nStories|#stories\nContact|#contact', cta: 'WhatsApp us', ctaHref: 'https://wa.me/254700000000' }, { bg: INK, color: '#ffffff', ac: '#c2410c' }, { sticky: 'top', hide: '1' })])])], { pt: 0, pb: 0, px: 0 }, { tag: 'header', width: 'full' })];
 				} },
 				{ id: 'nav-topbar', name: 'Info bar above the menu', note: 'A thin strip with phone and email, then the main menu.', build: function () {
 					return [S([
 						R([K([T('<p>Call +254 700 000 000 &middot; hello@kilele.ac.ke</p>', { size: 14, color: '#ffffff' })]), K([T('<p>Mon to Fri, 8am to 5pm</p>', { size: 14, color: '#ffffff', align: 'right', m: { align: 'left' } })])], { bg: BRAND, pt: 8, pb: 8, px: 20, gap: 8 }),
-						R([K([N('navbar', { brand: 'Kilele Academy', cta: 'Apply now' })])])
+						R([K([N('navbar', { brand: 'Kilele Academy', cta: 'Apply now' }, { ac: '#1d4ed8' })])])
 					], { pt: 0, pb: 0, px: 0 }, { tag: 'header', width: 'full' })];
 				} },
 				{ id: 'nav-mega', name: 'Mega menu header', note: 'Big dropdown panels for sites with many pages, like courses by category.', build: function () {
@@ -211,7 +211,7 @@
 					return [S([R([K([H('\u201cThis course changed my career. Six months later I run my own studio.\u201d', 'p', { size: 30, weight: '600', color: '#ffffff', align: 'center', lh: 1.4, m: { size: 22 } }, { 'in': 'fade', text: 'words' }), H('Wanjiru Kamau, founder of Kamau Creative', 'p', { size: 15, color: GOLD, align: 'center', mt: 16 })])])], { bg: '#111827', pt: 100, pb: 100 }, { width: 'narrow' })];
 				} },
 				{ id: 'ts-video', name: 'Video story with rating', note: 'A student video that opens in a pop-up, with a star rating and a short quote.', build: function () {
-					return [S([R([K([N('videobox', { src: pic('team'), label: 'Watch Achieng\u2019s story' }, { radius: 20 }, { hover: 'lift' })], { valign: 'center' }), K([N('rating', { label: 'Rated 4.9 by 300 students' }), H('\u201cI found my first client in week three.\u201d', 'p', { size: 26, weight: '700', lh: 1.35, mt: 10 }), T('<p>Achieng Otieno, web designer, Kisumu</p>', { color: '#64748b' })], { valign: 'center' })], { gap: 48, valign: 'center' })], { bg: '#fdf2f8' })];
+					return [S([R([K([N('videobox', { src: pic('team'), label: 'Watch Achieng\u2019s story' }, { radius: 20 }, { hover: 'lift' })], { valign: 'center' }), K([N('rating', { label: 'Rated 4.9 by 300 students' }), H('\u201cI found my first client in week three.\u201d', 'p', { size: 26, weight: '700', lh: 1.35, mt: 10 }), T('<p>Achieng Otieno, web designer, Kisumu</p>', { color: '#475569' })], { valign: 'center' })], { gap: 48, valign: 'center' })], { bg: '#fdf2f8' })];
 				} }
 			]
 		},
@@ -270,7 +270,7 @@
 					return [S([R([K([H('Your new career starts this month', 'h2', { size: 40, color: '#ffffff', align: 'center', m: { size: 28 } }), B('Reserve your place', '#apply', { align: 'center', bg: GOLD, color: '#111827', radius: 8, mt: 12 })])])], { bgImg: pic('office'), overlay: 'rgba(0,0,0,.6)', pt: 110, pb: 110 })];
 				} },
 				{ id: 'cta-countdown', name: 'Countdown to the deadline', note: 'A countdown timer that creates urgency before a deadline.', build: function () {
-					return [S([R([K([H('Applications close soon', 'h2', { size: 34, align: 'center', color: '#ffffff' }), N('countdown'), B('Apply before it ends', '#apply', { align: 'center', bg: '#f43f5e', radius: 999, mt: 16 })])])], { bg: '#1e1b4b' }, { width: 'narrow' })];
+					return [S([R([K([H('Applications close soon', 'h2', { size: 34, align: 'center', color: '#ffffff' }), N('countdown'), B('Apply before it ends', '#apply', { align: 'center', bg: '#e11d48', radius: 999, mt: 16 })])])], { bg: '#1e1b4b' }, { width: 'narrow' })];
 				} }
 			]
 		},
@@ -331,7 +331,7 @@
 					return [S([R([K([H('Find us', 'h2', { size: 34 }), N('iconbox', { icon: 'phone', title: 'Phone', text: '+254 700 000 000' }, { layout: 'row', mb: 12 }), N('iconbox', { icon: 'mail', title: 'Email', text: 'hello@kilele.ac.ke' }, { layout: 'row', mb: 12 }), N('iconbox', { icon: 'pin', title: 'Visit', text: 'Moi Avenue, Nairobi' }, { layout: 'row' })]), K([N('map', {}, { radius: 16 })])], { gap: 40 })])];
 				} },
 				{ id: 'ct-dark', name: 'Dark contact band', note: 'A dark section with a form and a WhatsApp button.', build: function () {
-					return [S([R([K([H('Let\u2019s talk', 'h2', { size: 40, color: '#ffffff' }), T('<p>Prefer WhatsApp? Tap below.</p>', { color: '#cbd5e1' }), B('WhatsApp us', 'https://wa.me/254700000000', { bg: '#22c55e', radius: 999 }, null, { newtab: '1' })]), K([N('form')], { bg: '#ffffff', radius: 16, pt: 20, pb: 20, px: 20 })], { gap: 40, valign: 'center' })], { bg: INK })];
+					return [S([R([K([H('Let\u2019s talk', 'h2', { size: 40, color: '#ffffff' }), T('<p>Prefer WhatsApp? Tap below.</p>', { color: '#cbd5e1' }), B('WhatsApp us', 'https://wa.me/254700000000', { bg: '#15803d', radius: 999 }, null, { newtab: '1' })]), K([N('form')], { bg: '#ffffff', radius: 16, pt: 20, pb: 20, px: 20 })], { gap: 40, valign: 'center' })], { bg: INK })];
 				} },
 				{ id: 'ct-pay', name: 'Enrol and pay', note: 'Next intake dates beside an M-Pesa payment box: everything needed to join today.', build: function () {
 					return [S([R([K([H('Join the next intake', 'h2', { size: 36, weight: '800' }), N('intakes')]), K([N('mpesa')], { valign: 'center' })], { gap: 40 })], { bg: '#f0fdf4' }, { anchor: 'apply' })];
@@ -346,12 +346,12 @@
 			designs: [
 				{ id: 'ft-columns', name: 'Three-column dark footer', demo: 1, note: 'Brand, links and social in three columns, copyright below.', build: function () {
 					return [S([
-						R([K([H('Kilele Academy', 'h3', { color: '#ffffff' }), T('<p>Practical skills for real careers.</p>', { color: '#94a3b8' })]), K([H('Links', 'h4', { color: '#ffffff' }), T('<p><a href="#courses">Courses</a><br><a href="#about">About</a><br><a href="#contact">Contact</a></p>', { color: '#cbd5e1' })]), K([H('Follow us', 'h4', { color: '#ffffff' }), N('social')])]),
+						R([K([H('Kilele Academy', 'h3', { color: '#ffffff' }), T('<p>Practical skills for real careers.</p>', { color: '#94a3b8' })]), K([H('Links', 'h4', { color: '#ffffff' }), T('<p><a href="#courses" style="color:#e2e8f0">Courses</a><br><a href="#about" style="color:#e2e8f0">About</a><br><a href="#contact" style="color:#e2e8f0">Contact</a></p>', { color: '#cbd5e1' })]), K([H('Follow us', 'h4', { color: '#ffffff' }), N('social')])]),
 						R([K([N('divider', {}, { lc: '#334155', lw: 1 }), T('<p>&copy; 2026 Kilele Academy. All rights reserved.</p>', { color: '#94a3b8', size: 14, align: 'center' })])])
 					], { bg: INK, pt: 56, pb: 24 }, { tag: 'footer' })];
 				} },
 				{ id: 'ft-centre', name: 'Centred minimal footer', note: 'Logo text, a row of links and copyright, all centred.', build: function () {
-					return [S([R([K([H('Kilele Academy', 'h3', { align: 'center' }), T('<p><a href="#">Courses</a> &middot; <a href="#">About</a> &middot; <a href="#">Contact</a></p>', { align: 'center', color: '#475569' }), T('<p>&copy; 2026 Kilele Academy</p>', { align: 'center', size: 13, color: '#94a3b8' })])])], { bg: SOFT, pt: 40, pb: 32 }, { tag: 'footer', width: 'narrow' })];
+					return [S([R([K([H('Kilele Academy', 'h3', { align: 'center' }), T('<p><a href="#">Courses</a> &middot; <a href="#">About</a> &middot; <a href="#">Contact</a></p>', { align: 'center', color: '#475569' }), T('<p>&copy; 2026 Kilele Academy</p>', { align: 'center', size: 13, color: '#64748b' })])])], { bg: SOFT, pt: 40, pb: 32 }, { tag: 'footer', width: 'narrow' })];
 				} },
 				{ id: 'ft-cta', name: 'Footer with a final call to action', note: 'A big closing message and button above the footer links.', build: function () {
 					return [S([
