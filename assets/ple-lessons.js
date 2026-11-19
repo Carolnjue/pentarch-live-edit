@@ -261,6 +261,22 @@
 			],
 			hint: 'Use the &uarr; and &darr; buttons in Layers to move a section.'
 		},
+		{
+			id: 'pb-motion', module: 'm4', title: 'Movement that helps, not distracts', mins: 8, kind: 'builder',
+			body: [
+				'<p>Good movement guides the eye. An <b>entrance animation</b> draws attention to content as it scrolls into view. A <b>hover effect</b> tells visitors something is clickable. A <b>sticky menu</b> keeps navigation in reach on long pages.</p>',
+				'<p>Use movement with care: one gentle style across the page, short durations, and never on long paragraphs. PLE turns animations off automatically for people who ask their phone to reduce motion.</p>',
+				'<p>Open <b>Edit &rsaquo; Motion</b> on any item. Press <b>Play entrance</b> to preview it; the live page plays it when visitors scroll.</p>'
+			].join(''),
+			task: 'On this page: give <b>two items</b> an entrance animation, give a <b>button or card</b> a hover effect, and make the <b>menu bar stick</b> to the top when scrolling.',
+			start: 'starter',
+			checks: [
+				{ t: 'At least two items have an entrance animation', f: function (c) { return nodes(c).filter(function (n) { return n.props && n.props.fx && n.props.fx['in']; }).length >= 2; } },
+				{ t: 'A button or card has a hover effect', f: function (c) { return nodes(c).some(function (n) { return /^(button|card|iconbox|imagebox|flipbox|pricing)$/.test(n.type) && n.props.fx && n.props.fx.hover; }); } },
+				{ t: 'The menu bar sticks to the top', f: function (c) { return nodes(c, 'navbar').some(function (n) { return n.props.fx && n.props.fx.sticky === 'top'; }); } }
+			],
+			hint: 'Select an item, open <b>Edit &rsaquo; Motion</b> and choose an <b>Animation</b>. For the menu, select the menu bar and set <b>Stick when scrolling</b> to <b>Stick to the top</b>.'
+		},
 		/* ------------------------------------------------------------ M5 */
 		{
 			id: 'proj-landing', module: 'm5', title: 'Project: a business landing page', mins: 40, kind: 'builder',

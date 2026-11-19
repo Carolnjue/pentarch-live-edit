@@ -1345,7 +1345,7 @@
 		card: function (lessonId) {
 			var s2 = this.summary();
 			if (!LAB()) return h('span');
-			var map = { 'pb-hero': 'hero', 'pb-structure': 'services', 'pb-mobile': 'hero', 'pb-layers': 'about' };
+			var map = { 'pb-hero': 'hero', 'pb-structure': 'services', 'pb-mobile': 'hero', 'pb-layers': 'about', 'pb-motion': 'services' };
 			var tp = lessonId && map[lessonId] && topicById(map[lessonId]);
 			if (tp) {
 				var c1 = h('a', { class: 'al-promo', href: '#/lab/' + tp.id });
