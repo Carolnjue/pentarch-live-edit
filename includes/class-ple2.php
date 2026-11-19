@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
 
 final class PLE2 {
 
-	const VERSION  = '2.4.7';
+	const VERSION  = '2.4.8';
 	const NS       = 'ple/v2';
 	const PROJECT  = 'ple_project';
 	const KLASS    = 'ple_class';
@@ -233,6 +233,7 @@ final class PLE2 {
 					'types'    => PLE_Pro::types(),
 					'client'   => PLE_Pro::is_client(),
 					'canTheme' => current_user_can( 'edit_theme_options' ),
+					'studio'   => self::studio_url(),
 				) : null,
 			)
 		);
@@ -1417,6 +1418,11 @@ final class PLE2 {
 		$parent = 'edit.php?post_type=ple_block';
 		add_submenu_page( $parent, __( 'Page Builder', 'pentarch-live-edit' ), __( 'Page Builder', 'pentarch-live-edit' ), 'edit_pages', 'ple-pages', array( __CLASS__, 'pages_screen' ) );
 		add_submenu_page( $parent, __( 'PLE Studio', 'pentarch-live-edit' ), __( 'PLE Studio', 'pentarch-live-edit' ), 'manage_options', 'ple-studio', array( __CLASS__, 'studio_screen' ) );
+		/* Direct link to the Design Lab inside Studio. */
+		global $submenu;
+		if ( current_user_can( 'edit_pages' ) && isset( $submenu[ $parent ] ) ) {
+			$submenu[ $parent ][] = array( __( 'Design Lab', 'pentarch-live-edit' ), 'edit_pages', self::studio_url() . '#/lab' ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride
+		}
 	}
 
 	public static function pages_screen() {
