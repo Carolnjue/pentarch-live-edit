@@ -884,7 +884,7 @@
 		cert.innerHTML = '<div>' + ring(st.pct, 90) + '</div><div><h3>Practical Web Design certificate</h3><p>' + (me.cert ? 'Earned! Share it with employers and clients.' : 'Complete all ' + st.total + ' lessons to earn it. ' + (st.total - st.done) + ' to go.') + '</p></div>';
 		if (me.cert) cert.appendChild(h('a', { class: 'st-btn pri', href: me.cert, target: '_blank' }, 'View certificate'));
 		p.appendChild(cert);
-		if (window.PLEAcademy) p.appendChild(window.PLEAcademy.card());
+		if (window.PLEAcademy) { p.appendChild(window.PLEAcademy.card()); p.appendChild(window.PLEAcademy.badges()); }
 		var list = h('div', { class: 'st-menu' });
 		if (installEvt) list.appendChild(h('button', { type: 'button', onclick: function () { installEvt.prompt(); } }, icon('bolt', 18) + '<span>Install the app on this phone</span>'));
 		else list.appendChild(h('div', { class: 'st-tip' }, icon('bolt', 18) + '<span><b>Tip:</b> in your browser menu choose <b>Add to Home screen</b> to open Studio like an app.</span>'));

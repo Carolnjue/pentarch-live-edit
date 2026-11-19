@@ -219,3 +219,8 @@ body:has(.st-modal) .ag-tip{display:none}
 .al-sr{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:12px;background:#fff;border:1px solid var(--line);text-decoration:none;color:var(--ink)}.al-sr:hover{border-color:var(--brand)}
 .al-sr small{display:block;color:var(--mut);font-size:12px}.al-sri{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:none;background:color-mix(in srgb,var(--tc) 12%,#fff);color:var(--tc)}
 .al-meta{display:block;margin-top:4px;font-size:12px;font-weight:600;color:#94a3b8}
+.al-badges{margin-bottom:18px}
+.al-bg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.al-badge{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:14px 10px;border-radius:16px;background:#fff;border:1px solid var(--line)}
+.al-badge span{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--tc);box-shadow:0 0 0 4px color-mix(in srgb,var(--tc) 20%,#fff)}
+.al-badge b{font-size:13.5px;margin-top:6px}.al-badge small{font-size:11.5px;color:var(--mut);line-height:1.3}

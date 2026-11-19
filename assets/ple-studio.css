@@ -273,6 +273,7 @@ pre{font:13px/1.55 ui-monospace,Menlo,Consolas,monospace;background:var(--navy);
 .st-menu{display:grid;gap:8px}
 .st-menu>button,.st-menu>a,.st-tip{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-align:left;cursor:pointer;color:var(--ink);text-decoration:none;font-weight:600}
 .st-tip{cursor:default;font-weight:400;color:#334155}
+.st-menu svg,.st-tip svg{flex-shrink:0}
 
 /* modal, toast, celebration */
 .st-modal{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:100000;display:flex;align-items:flex-end;justify-content:center;animation:stfade .15s}

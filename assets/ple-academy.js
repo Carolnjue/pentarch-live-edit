@@ -1296,6 +1296,25 @@
 			if (parts[0] === 'makeover') { runMakeover(parts[1] === 'do' ? 'do' : 'watch'); return true; }
 			return false;
 		},
+		/* Badges earned in the Lab, shown on the Me page. */
+		badges: function () {
+			if (!LAB()) return h('span');
+			var s2 = this.summary(), list = [];
+			if (s2.started) list.push(['bolt', 'Builder ready', 'Finished the Get started tour', '#2563eb']);
+			if (s2.makeover) list.push(['rows', 'Makeover artist', 'Turned a template into a unique site', '#7c3aed']);
+			if (s2.built >= 1) list.push(['star', 'First design', 'Built your first section design', '#0891b2']);
+			if (s2.built >= 10) list.push(['award', 'Ten designs', 'Built ten section designs', '#16a34a']);
+			if (s2.built >= 25) list.push(['award', 'Design pro', 'Built twenty-five section designs', '#ca8a04']);
+			topics().forEach(function (t) { if (t.designs.every(function (d) { var e = stateOf(d); return e.done || e.guided; })) list.push([t.icon, t.name + ' master', 'Built every ' + t.name.toLowerCase() + ' design', t.color]); });
+			if (BRIEFS.every(function (b) { return (progress()['brief-' + b.id] || {}).done; })) list.push(['users', 'Client ready', 'Completed every client brief', '#db2777']);
+			var box = h('section', { class: 'al-badges' });
+			box.appendChild(h('h2', { class: 'st-h2' }, 'Design Lab badges'));
+			if (!list.length) { box.appendChild(h('p', { class: 'al-sub' }, 'Finish the Get started tour in the Design Lab to earn your first badge.')); return box; }
+			var g2 = h('div', { class: 'al-bg' });
+			list.forEach(function (b) { g2.appendChild(h('div', { class: 'al-badge', style: '--tc:' + b[3], title: b[2] }, '<span>' + icon(b[0], 20) + '</span><b>' + esc(b[1]) + '</b><small>' + esc(b[2]) + '</small>')); });
+			box.appendChild(g2);
+			return box;
+		},
 		/* Teachers see what a student has done in the Lab. */
 		studentModal: function (m) {
 			var items = m.labItems || {}, box = h('div', { class: 'al-stu' });
