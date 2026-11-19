@@ -629,6 +629,16 @@
 			setTimeout(function () { self.advancing = false; self.el.classList.remove('ag-pass'); self.next(); }, 1100);
 		}
 	};
+	var CAT = function (op) {
+		if (op.t === 'add') return 'Structure';
+		if (op.where === 'motion') return 'Motion';
+		if (op.dev) return 'Phone view';
+		if (op.where === 'content') return 'Content';
+		if (/^(color|bg|ic|ac|grad1|grad2|g1|g2|gradText|overlay|bgImg|lc|c1|c2|ff|fb|hk|sb|cdbg|particles)$/.test(op.k)) return 'Colour and pictures';
+		if (/^(pt|pb|px|mt|mb|gap|fgap|minH|w|mw|valign|align|width)$/.test(op.k)) return 'Spacing and layout';
+		if (/^(size|weight|font|lh)$/.test(op.k)) return 'Text style';
+		return 'Details';
+	};
 	/* Spot common slips and explain how to fix them. */
 	GP.mistake = function (op) {
 		var tree = this.ed.tree;
@@ -661,8 +671,9 @@
 	/* ---------- practice mode */
 	GP.score = function () {
 		var self = this, total = 0, ok = 0, miss = [];
-		this.steps.forEach(function (st) { (st.ops || []).forEach(function (op) { if (op.t === 'device' || op.t === 'note' || op.t === 'select') return; total++; if (opOk(op, self.ed, self)) ok++; else miss.push({ st: st, op: op }); }); });
-		return { pct: total ? Math.round(100 * ok / total) : 100, miss: miss, total: total, ok: ok };
+		var cats = {};
+		this.steps.forEach(function (st) { (st.ops || []).forEach(function (op) { if (op.t === 'device' || op.t === 'note' || op.t === 'select') return; total++; var c = cats[CAT(op)] = cats[CAT(op)] || { n: 0, ok: 0 }; c.n++; if (opOk(op, self.ed, self)) { ok++; c.ok++; } else miss.push({ st: st, op: op }); }); });
+		return { pct: total ? Math.round(100 * ok / total) : 100, miss: miss, total: total, ok: ok, cats: cats };
 	};
 	GP.drawPractice = function (res) {
 		var self = this, o = this.o; this.lastRes = res;
@@ -682,6 +693,11 @@
 		if (res) {
 			var good = res.pct >= 80;
 			this.el.appendChild(h('div', { class: 'ag-score ' + (good ? 'good' : res.pct >= 50 ? 'mid' : 'low') }, '<b>' + res.pct + '%</b> ' + (good ? (o.brief ? 'This meets the brief. Publish it for your portfolio.' : 'Great match! You can save it to your parts.') : 'Getting there. ' + res.ok + ' of ' + res.total + (o.brief ? ' requirements met.' : ' details match.'))));
+			if (!o.brief && res.cats) {
+				var cg = h('div', { class: 'ag-cats' });
+				Object.keys(res.cats).forEach(function (k) { var c = res.cats[k]; cg.appendChild(h('span', { class: c.ok === c.n ? 'ok' : (c.ok ? 'part' : 'no') }, esc(k) + ' <b>' + c.ok + '/' + c.n + '</b>')); });
+				this.el.appendChild(cg);
+			}
 			if (!good && res.miss.length && !o.brief) {
 				this.hints = (this.hints || 0);
 				var ul = h('ul', { class: 'ag-ops' });
@@ -692,6 +708,7 @@
 		}
 		var ctl = h('div', { class: 'ag-ctl col' });
 		ctl.appendChild(h('button', { type: 'button', class: 'pri', onclick: function () { var r = self.score(); self.drawPractice(r); if (r.pct >= 80 && o.onPass) o.onPass(r, self); } }, icon('check', 14) + ' Check my work'));
+		if (o.compare) ctl.appendChild(h('button', { type: 'button', onclick: function () { o.compare(self.ed.tree); } }, 'Compare side by side'));
 		if (!o.brief) ctl.appendChild(h('button', { type: 'button', onclick: function () { self.allSteps(); } }, 'Show all the steps'));
 		(o.extra || []).forEach(function (b) { ctl.appendChild(h('button', { type: 'button', onclick: function () { b.on(self); } }, b.text)); });
 		this.el.appendChild(ctl);
@@ -743,6 +760,12 @@
 		};
 		setTimeout(function () { fit(); if (!lazy || !('IntersectionObserver' in g)) load(); else { var io = new IntersectionObserver(function (es) { if (es[0].isIntersecting) { io.disconnect(); load(); } }, { rootMargin: '300px' }); io.observe(wrap); } }, 0);
 		return wrap;
+	}
+	function compareModal(target, mine, title) {
+		var box = h('div', { class: 'al-cmp' });
+		var col = function (lbl, tr) { var c = h('div', { class: 'al-cmpc' }); c.appendChild(h('b', null, lbl)); var f = h('div', { class: 'al-bigf' }); c.appendChild(f); f.appendChild(preview(tr, 1280, false)); return c; };
+		box.appendChild(col('Target', target)); box.appendChild(col('Yours', mine));
+		X().modal('Compare: ' + title, box);
 	}
 	function bigPreview(tree, title) {
 		var box = h('div', { class: 'al-big' });
@@ -916,7 +939,7 @@
 				if (mode === 'guided' && saved && saved < steps.length && pr.tree.children.length) { /* resume */ } else saved = 0;
 				var reset = { text: 'Start again on an empty page', on: function (gd) { if (!confirm('Clear this page and start again?')) return; gd.destroy(); ed.tree = C.emptyPage(); ed.commit(); ed.renderAll(); ed.save(); x.store.set('lab-step:' + key, 0); setTimeout(function () { x.route(); }, 600); } };
 				var g2 = new Guide(ed, steps, mode === 'guided' ? 'do' : 'practice', {
-					title: d.name, start: saved, target: targetFn, extra: [reset],
+					title: d.name, start: saved, target: targetFn, extra: [reset], compare: function (mine) { compareModal(pageOf(d.build()), C.clone(mine), d.name); },
 					onStep: function (i) { x.store.set('lab-step:' + key, i); },
 					onExit: function () { ed.save(); location.hash = back; },
 					onDone: function () { ed.save(); x.store.set('lab-step:' + key, 0); mark(d.id, { guided: 1, score: 100 }); },
