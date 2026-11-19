@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
 
 final class PLE2 {
 
-	const VERSION  = '2.4.2';
+	const VERSION  = '2.4.3';
 	const NS       = 'ple/v2';
 	const PROJECT  = 'ple_project';
 	const KLASS    = 'ple_class';
@@ -207,7 +207,8 @@ final class PLE2 {
 		wp_enqueue_script( 'ple-core', self::asset( 'ple-core.js' ), array(), null, true );
 		wp_enqueue_script( 'ple-widgets', self::asset( 'ple-widgets.js' ), array( 'ple-core' ), null, true );
 		wp_enqueue_script( 'ple-editor', self::asset( 'ple-editor.js' ), array( 'ple-widgets' ), null, true );
-		wp_enqueue_script( 'ple-pro', self::asset( 'ple-pro.js' ), array( 'ple-editor' ), null, true );
+		wp_enqueue_script( 'ple-designs', self::asset( 'ple-academy-content.js' ), array( 'ple-widgets' ), null, true );
+		wp_enqueue_script( 'ple-pro', self::asset( 'ple-pro.js' ), array( 'ple-editor', 'ple-designs' ), null, true );
 		wp_enqueue_script( 'ple-builder', self::asset( 'ple-builder.js' ), array( 'ple-pro', 'media-editor' ), null, true );
 		wp_localize_script(
 			'ple-pro',

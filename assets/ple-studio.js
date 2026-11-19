@@ -761,7 +761,7 @@
 		all.forEach(function (a) {
 			var sub = c.subs.filter(function (s) { return s.assign === a.id; })[0];
 			var card = h('article', { class: 'st-as' });
-			card.innerHTML = '<div class="st-as-h"><b>' + esc(a.title) + '</b>' + (a.due ? '<small>Due ' + esc(new Date(a.due).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })) + '</small>' : '') + '</div>' + (a.brief ? '<p>' + esc(a.brief) + '</p>' : '') + (a.lesson && byId[a.lesson] ? '<a href="#/lesson/' + a.lesson + '" class="st-link">Related lesson: ' + esc(byId[a.lesson].title) + '</a>' : '') +
+			card.innerHTML = '<div class="st-as-h"><b>' + esc(a.title) + '</b>' + (a.due ? '<small>Due ' + esc(new Date(a.due).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })) + '</small>' : '') + '</div>' + (a.brief ? '<p>' + esc(a.brief) + '</p>' : '') + (a.lesson && byId[a.lesson] ? '<a href="#/lesson/' + a.lesson + '" class="st-link">Related lesson: ' + esc(byId[a.lesson].title) + '</a>' : (a.lesson && window.PLEAcademy && window.PLEAcademy.linkFor(a.lesson) ? '<a href="' + window.PLEAcademy.linkFor(a.lesson).href + '" class="st-link">Design Lab: ' + esc(window.PLEAcademy.linkFor(a.lesson).label) + '</a>' : '')) +
 				'<div class="st-as-s">' + statusPill(sub && sub.status) + (sub ? ' <a href="#/project/' + sub.project + '">' + esc(sub.title) + '</a>' : '') + '</div>' +
 				(sub && (sub.feedback || sub.grade) ? '<div class="st-fb"><b>Feedback' + (sub.grade ? ' &middot; ' + esc(sub.grade) : '') + '</b><p>' + esc(sub.feedback) + '</p></div>' : '');
 			var btn = h('button', { type: 'button', class: 'st-btn sm' + (sub ? '' : ' pri') }, sub ? 'Submit a new version' : 'Submit a project');
@@ -822,14 +822,15 @@
 				var du = h('input', { type: 'date', name: 'due', 'aria-label': 'Due date' });
 				var ls = h('select', { name: 'lesson', 'aria-label': 'Related lesson' }); ls.appendChild(h('option', { value: '' }, 'No related lesson'));
 				LESSONS.forEach(function (l) { ls.appendChild(h('option', { value: l.id }, (l.n + 1) + '. ' + l.title)); });
+				if (window.PLEAcademy) { var groups = {}; window.PLEAcademy.options().forEach(function (o) { var gr = groups[o[2]] = groups[o[2]] || ls.appendChild(h('optgroup', { label: o[2] })); gr.appendChild(h('option', { value: o[0] }, esc(o[1]))); }); }
 				f.appendChild(h('h3', null, 'New assignment')); f.appendChild(ti); f.appendChild(br);
-				f.appendChild(h('div', { class: 'st-row' }, [h('label', { class: 'st-field' }, [h('span', { text: 'Due date' }), du]), h('label', { class: 'st-field' }, [h('span', { text: 'Related lesson' }), ls])]));
+				f.appendChild(h('div', { class: 'st-row' }, [h('label', { class: 'st-field' }, [h('span', { text: 'Due date' }), du]), h('label', { class: 'st-field' }, [h('span', { text: 'Related lesson or Design Lab task' }), ls])]));
 				f.appendChild(h('button', { type: 'submit', class: 'st-btn pri' }, 'Add assignment'));
 				f.onsubmit = function (e) { e.preventDefault(); api('classes/' + c.id + '/assign', { method: 'POST', body: { title: ti.value, brief: br.value, due: du.value, lesson: ls.value } }).then(function (r) { c.assign = r.assign; toast('Assignment added. Students will see it in the class.', 'ok'); draw(); }).catch(function (x) { toast(x.message, 'err'); }); };
 				body.appendChild(f);
 				c.assign.slice().reverse().forEach(function (a) {
 					var n = c.subs.filter(function (s) { return s.assign === a.id; }).length;
-					var card = h('article', { class: 'st-as' }, '<div class="st-as-h"><b>' + esc(a.title) + '</b>' + (a.due ? '<small>Due ' + esc(a.due) + '</small>' : '') + '</div><p>' + esc(a.brief || '') + '</p><small>' + n + ' submitted</small>');
+					var card = h('article', { class: 'st-as' }, '<div class="st-as-h"><b>' + esc(a.title) + '</b>' + (a.due ? '<small>Due ' + esc(a.due) + '</small>' : '') + '</div><p>' + esc(a.brief || '') + '</p>' + (function () { var lk = a.lesson && (byId[a.lesson] ? { href: '#/lesson/' + a.lesson, label: 'Lesson: ' + byId[a.lesson].title } : (window.PLEAcademy && window.PLEAcademy.linkFor(a.lesson))); return lk ? '<a class="st-link" href="' + lk.href + '">' + esc(lk.label) + '</a><br>' : ''; })() + '<small>' + n + ' submitted</small>');
 					card.appendChild(h('button', { type: 'button', class: 'st-btn ghost sm', onclick: function () { if (confirm('Delete this assignment?')) api('classes/' + c.id + '/assign', { method: 'POST', body: { delete: a.id } }).then(function (r) { c.assign = r.assign; draw(); }); } }, 'Delete'));
 					body.appendChild(card);
 				});

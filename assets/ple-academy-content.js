@@ -5,7 +5,8 @@
 (function (g) {
 	'use strict';
 	var C = g.PLECore;
-	var pic = function (n) { return g.PLEStudio ? g.PLEStudio.picUrl(n) : ''; };
+	var BASE = ((document.currentScript && document.currentScript.src) || '').replace(/ple-academy-content\.js.*$/, 'pics/');
+	var pic = function (n) { return BASE + String(n).toLowerCase().replace(/[^a-z]+/g, '-') + '.svg'; };
 	var N = function (type, props, style, fx) { var n = C.node(type, props || {}, style || {}); if (fx) n.props.fx = fx; return n; };
 	var S = function (rows, style, props) { return C.section(rows, style || {}, props || {}); };
 	var R = function (cols, style, props) { return C.row(cols, style || {}, props || {}); };

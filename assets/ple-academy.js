@@ -1036,6 +1036,21 @@
 			if (parts[0] === 'makeover') { runMakeover(parts[1] === 'do' ? 'do' : 'watch'); return true; }
 			return false;
 		},
+		/* Teachers can attach any Lab item to a class assignment. */
+		options: function () {
+			var out = [['lab-start', 'Get started tour', 'Design Lab'], ['lab-makeover', 'Template makeover', 'Design Lab']];
+			BRIEFS.forEach(function (b) { out.push(['brief-' + b.id, 'Client brief: ' + b.name, 'Design Lab']); });
+			topics().forEach(function (t) { t.designs.forEach(function (d) { out.push(['d-' + d.id, t.name + ': ' + d.name + (d.demo ? '' : ' (practice)'), 'Design Lab designs']); }); });
+			return out;
+		},
+		linkFor: function (v) {
+			v = String(v || '');
+			if (v === 'lab-start') return { href: '#/start', label: 'Get started tour' };
+			if (v === 'lab-makeover') return { href: '#/makeover/do', label: 'Template makeover' };
+			if (v.indexOf('brief-') === 0) { var b = BRIEFS.filter(function (x) { return 'brief-' + x.id === v; })[0]; return b ? { href: '#/brief/' + b.id, label: 'Client brief: ' + b.name } : null; }
+			if (v.indexOf('d-') === 0) { var hit = designById(v.slice(2)); return hit ? { href: '#/lab/' + hit.t.id + '/' + hit.d.id + '/' + (hit.d.demo ? 'guided' : 'practise'), label: hit.t.name + ': ' + hit.d.name } : null; }
+			return null;
+		},
 		summary: function () {
 			var all = 0, built = 0, watched = 0;
 			topics().forEach(function (t) { t.designs.forEach(function (d) { all++; var e = stateOf(d); if (e.done || e.guided) built++; if (e.watched) watched++; }); });
