@@ -150,3 +150,15 @@
 .st-certbox+.al-promo{margin-top:16px}
 .st-cont+.al-promo{margin-top:14px}
 .al-new{background:linear-gradient(135deg,#1d4ed8,#7c3aed);border:0;color:#fff}.al-new small{color:#e0e7ff}.al-new .al-sci{background:rgba(255,255,255,.18);color:#fff}.al-new .st-btn{background:#fff;color:#1d4ed8;border-color:#fff}
+.al-briefs{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:760px){.al-briefs{grid-template-columns:repeat(3,1fr)}}
+.al-brief{display:flex;flex-direction:column;gap:4px;padding:18px;border-radius:var(--r);background:#fff;border:1px solid var(--line);text-decoration:none;color:var(--ink);background-image:radial-gradient(circle at 100% 0,#fef3c7 0,transparent 40%);transition:transform .18s,box-shadow .18s}
+.al-brief:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(15,23,42,.1)}
+.al-brief small{color:#b45309;font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.05em}
+.al-brief b{font-size:17px}.al-brief p{margin:0;color:var(--mut);font-size:14px;flex:1}
+body:has(.st-modal) .ag,body:has(.st-modal) .ag-ring,body:has(.st-modal) .ag-cur{z-index:20}
+.ag-tip{position:fixed;z-index:100004;max-width:260px;background:#0f172a;color:#fff;font:600 12.5px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:7px 10px;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,.25);pointer-events:none;opacity:0;transition:left .55s cubic-bezier(.4,0,.2,1),top .55s cubic-bezier(.4,0,.2,1),opacity .25s}
+.ag-tip.on{opacity:1}
+.ag-tip .ag-where{background:rgba(255,255,255,.18);color:#e2e8f0}
+.ag-tip b{color:#fde68a}
+body:has(.st-modal) .ag-tip{display:none}

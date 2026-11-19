@@ -228,7 +228,7 @@
 		this.build();
 		if (mode === 'watch') this.run();
 		else if (mode === 'do') this.poll();
-		else this.drawPractice();
+		else { this.drawPractice(); if (this.o.brief) { var me = this; this.pollT = setInterval(function () { var sig = JSON.stringify(me.steps[0].ops.map(function (op) { return opOk(op, me.ed, me); })); if (sig !== me._bs) { me._bs = sig; me.drawPractice(me.lastRes); } }, 1500); } }
 	}
 	var GP = Guide.prototype;
 	GP.build = function () {
@@ -236,7 +236,8 @@
 		this.el = h('div', { class: 'ag ag-' + this.mode, role: 'dialog', 'aria-label': 'Guide' });
 		this.cur = h('div', { class: 'ag-cur', 'aria-hidden': 'true' }, '<svg viewBox="0 0 24 24" width="26" height="26"><path d="M4 2l16 9.5-7 1.6 4.2 7.6-3.1 1.7-4.2-7.7L4 19z" fill="#0f172a" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>');
 		this.ring = h('div', { class: 'ag-ring', 'aria-hidden': 'true' });
-		document.body.appendChild(this.ring); document.body.appendChild(this.cur); document.body.appendChild(this.el);
+		this.tip = h('div', { class: 'ag-tip', 'aria-hidden': 'true' });
+		document.body.appendChild(this.ring); document.body.appendChild(this.cur); document.body.appendChild(this.tip); document.body.appendChild(this.el);
 		this.cur.style.left = (innerWidth / 2) + 'px'; this.cur.style.top = (innerHeight / 2) + 'px';
 		this.alive = setInterval(function () { if (!document.body.contains(self.ed.el)) return self.destroy(); self.el.classList.toggle('ag-compact', self.ed.isPhone() && self.ed.el.classList.contains('sheet')); }, 300);
 		this.el.addEventListener('click', function (e) { e.stopPropagation(); });
@@ -244,7 +245,7 @@
 	GP.destroy = function () {
 		this.token.cancel = true; this.dead = true;
 		clearInterval(this.alive); clearInterval(this.pollT);
-		[this.el, this.cur, this.ring].forEach(function (x) { if (x && x.parentNode) x.remove(); });
+		[this.el, this.cur, this.ring, this.tip].forEach(function (x) { if (x && x.parentNode) x.remove(); });
 	};
 	GP.head = function (badge, extra) {
 		var self = this, o = this.o, n = this.steps.length;
@@ -280,6 +281,11 @@
 		var r = this.rectOf(el); if (!r) return this.wait(150);
 		var x = Math.min(innerWidth - 20, Math.max(8, r.left + Math.min(r.width / 2, 120))), y = Math.min(innerHeight - 20, Math.max(8, r.top + Math.min(r.height / 2, 40)));
 		this.cur.style.left = x + 'px'; this.cur.style.top = y + 'px'; this.cur.classList.add('on');
+		if (this.tip.innerHTML) {
+			var tw = this.tip.offsetWidth || 220, th = this.tip.offsetHeight || 30;
+			var tx = Math.min(innerWidth - tw - 8, Math.max(8, x + 22)), ty = y + 30 + th > innerHeight - 8 ? y - th - 14 : y + 30;
+			this.tip.style.left = tx + 'px'; this.tip.style.top = ty + 'px'; this.tip.classList.add('on');
+		}
 		if (!noRing) this.showRing(r);
 		return this.wait(650);
 	};
@@ -473,8 +479,10 @@
 				await this.wait(this.i === 0 ? 1200 : 700);
 				for (var k = 0; k < (st.ops || []).length; k++) {
 					this.opI = k; this.drawWatch();
+					this.tip.innerHTML = st.ops[k].t === 'note' ? '' : opCaption(st.ops[k]);
 					await this.doOp(st.ops[k]);
 				}
+				this.tip.classList.remove('on');
 				this.opI = (st.ops || []).length; this.drawWatch();
 				await this.wait(800);
 				if (tok.cancel) return;
@@ -485,7 +493,7 @@
 	};
 	GP.finish = function () {
 		var self = this;
-		this.ring.classList.remove('on'); this.cur.classList.remove('on');
+		this.ring.classList.remove('on'); this.cur.classList.remove('on'); this.tip.classList.remove('on');
 		try { var ed = this.ed; if (ed.isPhone()) ed.closeSheet(); ed.select(null); if (ed.device !== 'd') ed.setDevice('d'); if (ed.win) ed.win.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { }
 		this.el.innerHTML = '';
 		this.head(this.mode === 'watch' ? 'Demo' : 'Guided');
@@ -547,8 +555,8 @@
 		var self = this;
 		this.showing = true; this.speed = 1.4; this.token = { cancel: false };
 		this.el.classList.add('ag-busy');
-		try { for (var k = 0; k < st.ops.length; k++) if (st.ops[k].t === 'device' || !opOk(st.ops[k], this.ed, this)) await this.doOp(st.ops[k]); } catch (e) { }
-		this.cur.classList.remove('on');
+		try { for (var k = 0; k < st.ops.length; k++) if (st.ops[k].t === 'device' || !opOk(st.ops[k], this.ed, this)) { this.tip.innerHTML = opCaption(st.ops[k]); await this.doOp(st.ops[k]); } } catch (e) { }
+		this.cur.classList.remove('on'); this.tip.classList.remove('on'); this.tip.innerHTML = '';
 		this.el.classList.remove('ag-busy');
 		this.showing = false; this._sig = '';
 		setTimeout(function () { self.drawDo(); }, 200);
@@ -561,19 +569,24 @@
 		return { pct: total ? Math.round(100 * ok / total) : 100, miss: miss, total: total, ok: ok };
 	};
 	GP.drawPractice = function (res) {
-		var self = this, o = this.o;
+		var self = this, o = this.o; this.lastRes = res;
 		this.el.innerHTML = '';
 		this.head('Practice');
-		this.el.appendChild(h('p', { class: 'ag-say' }, 'Build this design on your own. Look at the target, then check your work as often as you like.'));
+		this.el.appendChild(h('p', { class: 'ag-say' }, o.brief || 'Build this design on your own. Look at the target, then check your work as often as you like.'));
 		if (o.target) {
 			var th = h('button', { type: 'button', class: 'ag-target', title: 'See the target bigger', onclick: function () { o.target(true); } });
 			th.appendChild(o.target(false));
 			this.el.appendChild(th);
 		}
+		if (o.brief) {
+			var bl = h('ul', { class: 'ag-ops' });
+			this.steps.forEach(function (st) { st.ops.forEach(function (op) { var ok = opOk(op, self.ed, self); bl.appendChild(h('li', { class: ok ? 'ok' : '' }, '<i></i><span>' + opCaption(op) + '</span>')); }); });
+			this.el.appendChild(bl);
+		}
 		if (res) {
 			var good = res.pct >= 80;
-			this.el.appendChild(h('div', { class: 'ag-score ' + (good ? 'good' : res.pct >= 50 ? 'mid' : 'low') }, '<b>' + res.pct + '%</b> ' + (good ? 'Great match! You can save it to your parts.' : 'Getting there. ' + res.ok + ' of ' + res.total + ' details match.')));
-			if (!good && res.miss.length) {
+			this.el.appendChild(h('div', { class: 'ag-score ' + (good ? 'good' : res.pct >= 50 ? 'mid' : 'low') }, '<b>' + res.pct + '%</b> ' + (good ? (o.brief ? 'This meets the brief. Publish it for your portfolio.' : 'Great match! You can save it to your parts.') : 'Getting there. ' + res.ok + ' of ' + res.total + (o.brief ? ' requirements met.' : ' details match.'))));
+			if (!good && res.miss.length && !o.brief) {
 				this.hints = (this.hints || 0);
 				var ul = h('ul', { class: 'ag-ops' });
 				res.miss.slice(0, this.hints).forEach(function (m) { ul.appendChild(h('li', { class: 'now' }, '<i></i><span>' + esc(m.st.title) + ': ' + opCaption(m.op) + '</span>')); });
@@ -583,7 +596,8 @@
 		}
 		var ctl = h('div', { class: 'ag-ctl col' });
 		ctl.appendChild(h('button', { type: 'button', class: 'pri', onclick: function () { var r = self.score(); self.drawPractice(r); if (r.pct >= 80 && o.onPass) o.onPass(r, self); } }, icon('check', 14) + ' Check my work'));
-		ctl.appendChild(h('button', { type: 'button', onclick: function () { self.allSteps(); } }, 'Show all the steps'));
+		if (!o.brief) ctl.appendChild(h('button', { type: 'button', onclick: function () { self.allSteps(); } }, 'Show all the steps'));
+		(o.extra || []).forEach(function (b) { ctl.appendChild(h('button', { type: 'button', onclick: function () { b.on(self); } }, b.text)); });
 		this.el.appendChild(ctl);
 	};
 	GP.allSteps = function () {
@@ -672,6 +686,13 @@
 			grid.appendChild(a);
 		});
 		p.appendChild(grid);
+		p.appendChild(h('div', { class: 'al-hrow' }, '<h2 class="st-h2">Client briefs</h2><span class="al-count">Put it all together: a full website for a real-style client</span>'));
+		var bg = h('div', { class: 'al-briefs' });
+		BRIEFS.forEach(function (b) {
+			var e = progress()['brief-' + b.id] || {};
+			bg.appendChild(h('a', { class: 'al-brief', href: '#/brief/' + b.id }, '<small>' + esc(b.who) + '</small><b>' + esc(b.name) + '</b><p>' + esc(b.brief) + '</p>' + (e.done ? chip(icon('check', 12) + ' Done ' + (e.score || '') + '%', 'ok') : chip('Brief', 'pr'))));
+		});
+		p.appendChild(bg);
 		p.appendChild(h('h2', { class: 'st-h2' }, 'My saved parts'));
 		var parts = h('div'); p.appendChild(parts);
 		x.shell('lab', p);
@@ -915,6 +936,43 @@
 		}).catch(function (e) { x.toast(e.message, 'err'); location.hash = '#/lab'; });
 	}
 
+	/* ================================================================ client briefs */
+	var count = function (tree, test) { var n = 0; C.walk(tree, function (x) { if (test(x)) n++; }); return n; };
+	var anyType = function (tree, types) { return count(tree, function (x) { return types.indexOf(x.type) > -1; }); };
+	var chk = function (caption, fn) { return { t: 'check', caption: caption, fn: fn }; };
+	function commonChecks(name) {
+		return [
+			chk('A menu bar at the top with <b>' + esc(name) + '</b> as the brand', function (t) { var s0 = t.children[0], ok = false; if (s0) C.walk(s0, function (x) { if ((x.type === 'navbar' && String(x.props.brand || '').toLowerCase().indexOf(name.toLowerCase().split(' ')[0].replace(/[^a-z]/g, '')) > -1) || x.type === 'megamenu') ok = true; }); return ok; }),
+			chk('A hero near the top with one H1 headline and a button', function (t) { var ok = false; t.children.slice(0, 3).forEach(function (s0) { var h1 = 0, btn = 0, hs = 0; C.walk(s0, function (x) { if (x.type === 'heading' && x.props.tag === 'h1') h1++; if (x.type === 'typing' && x.props.tag === 'h1') h1++; if (x.type === 'button') btn++; if (x.type === 'heroslider') hs++; }); if ((h1 && btn) || hs) ok = true; }); return ok; }),
+			chk('Proof people can trust: testimonials, a star rating or numbers', function (t) { return anyType(t, ['testimonials', 'rating', 'stats', 'counter', 'logos']) > 0; }),
+			chk('An easy way to get in touch: a form, WhatsApp or a phone link', function (t) { return anyType(t, ['form', 'whatsapp', 'booking']) > 0 || count(t, function (x) { return /^(https:\/\/wa\.me|tel:)/.test(String(x.props.href || x.props.ctaHref || '')); }) > 0; }),
+			chk('A footer at the end of the page', function (t) { var l = t.children[t.children.length - 1]; return !!l && l.props.tag === 'footer'; }),
+			chk('At least 3 real pictures', function (t) { return count(t, function (x) { return (x.props && /^(https?:|data:image)/.test(String(x.props.src || '')) && x.type !== 'logos') || (x.style && x.style.bgImg && !/placeholder|^data:image\/svg/.test(String(x.style.bgImg))); }) + count(t, function (x) { return Array.isArray(x.props && x.props.items) && x.props.items.some(function (i) { return i.src; }) ? 1 : 0; }) >= 3; }),
+			chk('Movement: at least 3 animated items', function (t) { return count(t, function (x) { return x.props && x.props.fx && (x.props.fx['in'] || x.props.fx.hover || x.props.fx.loop); }) >= 3; }),
+			chk('Checked on a phone: at least one phone-only size', function (t) { return count(t, function (x) { return x.style && x.style.m && Object.keys(x.style.m).length; }) > 0; })
+		];
+	}
+	var BRIEFS = [
+		{ id: 'kitchen', name: 'Mama Njeri\u2019s Kitchen', who: 'A family restaurant in Kisumu', brief: 'Mama Njeri wants more lunch orders on WhatsApp. She needs her menu with prices, photos of the food and her opening hours.', extra: function () { return [chk('The menu with prices (a price list or pricing tables)', function (t) { return anyType(t, ['pricelist', 'pricing', 'table']) > 0; }), chk('A WhatsApp order button', function (t) { return anyType(t, ['whatsapp']) > 0 || count(t, function (x) { return /wa\.me/.test(String(x.props.href || '')); }) > 0; })]; } },
+		{ id: 'salon', name: 'Glow Salon', who: 'A beauty salon in Nairobi', brief: 'Glow Salon wants new clients to see their work, know the prices and book a visit without calling.', extra: function () { return [chk('A gallery of their work', function (t) { return anyType(t, ['gallery', 'carousel']) > 0; }), chk('A booking or contact form', function (t) { return anyType(t, ['form', 'booking']) > 0; })]; } },
+		{ id: 'academy', name: 'Kilele Academy', who: 'A training school', brief: 'Kilele Academy needs a site that sells its courses: what they teach, how to join, what students say, and a form to apply.', extra: function () { return [chk('At least 3 courses as cards, icon boxes or flip boxes', function (t) { return anyType(t, ['card', 'iconbox', 'imagebox', 'flipbox', 'carousel']) >= 3 || anyType(t, ['carousel']) > 0; }), chk('How to join: steps, a timeline or a journey', function (t) { return anyType(t, ['journey', 'timeline', 'tabs']) > 0; })]; } }
+	];
+	function briefSteps(b) { return [{ title: b.name, ops: commonChecks(b.name).concat(b.extra()) }]; }
+	function runBrief(id) {
+		var b = BRIEFS.filter(function (x) { return x.id === id; })[0]; if (!b) return X().go404();
+		var x = X();
+		boot('Opening the client brief\u2026');
+		labProject('brief-' + b.id, b.name, C.emptyPage()).then(function (pr) {
+			x.openEditor(pr, { exitTo: '#/lab', exitLabel: 'Lab', sideNote: '<b>Client brief:</b> ' + esc(b.brief) + ' Use your saved parts from <b>My parts</b> below, or build from scratch.', onReady: function (ed) {
+				new Guide(ed, briefSteps(b), 'practice', { title: 'Brief: ' + b.name, brief: '<b>' + esc(b.who) + '.</b> ' + esc(b.brief),
+					onExit: function () { ed.save(); location.hash = '#/lab'; },
+					onPass: function (r) { ed.save(); mark('brief-' + b.id, { done: 1, score: r.pct }); x.modal('Brief complete!', '<div class="st-cele"><div class="st-confetti" aria-hidden="true">' + new Array(18).join('<i></i>') + '</div>' + icon('award', 48) + '<p>Your website for <b>' + esc(b.name) + '</b> meets the brief. Publish it and add it to your portfolio, or submit it to your class.</p></div>', [{ text: 'Publish and share', cls: 'pri', on: function (c) { c(); var sb = document.querySelector('.pe-acts button[title="Publish and share"]'); if (sb) sb.click(); } }, { text: 'Keep improving', on: function (c) { c(); } }]); }
+				});
+				if (!pr.tree.children.length) ed.showTab('add');
+			} });
+		}).catch(function (e) { x.toast(e.message, 'err'); location.hash = '#/lab'; });
+	}
+
 	/* ================================================================ editor: My parts */
 	if (g.PLEEditor) {
 		var EP = g.PLEEditor.prototype, origAdd = EP.panelAdd;
@@ -974,6 +1032,7 @@
 				runDesign(parts[1], parts[2], parts[3] || 'watch'); return true;
 			}
 			if (parts[0] === 'start') { runStart(); return true; }
+			if (parts[0] === 'brief') { runBrief(parts[1]); return true; }
 			if (parts[0] === 'makeover') { runMakeover(parts[1] === 'do' ? 'do' : 'watch'); return true; }
 			return false;
 		},
