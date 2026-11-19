@@ -211,7 +211,7 @@
 					Cl.children.forEach(function (Wd) {
 						var nth = count[Wd.type] = (count[Wd.type] || 0); count[Wd.type]++;
 						var ref = { s: s, r: ri, c: ci, w: { type: Wd.type, nth: nth } }, lab = typeLabel(Wd.type);
-						var pp = Wd.props || {}, snip = String(pp.text || pp.title || pp.brand || pp.before || pp.ftitle || pp.name || (pp.html || '').replace(/<[^>]+>/g, ' ') || '').replace(/\s+/g, ' ').trim();
+						var pp = Wd.props || {}, snip = String(pp.title || pp.text || pp.brand || pp.before || pp.ftitle || pp.name || (pp.html || '').replace(/<[^>]+>/g, ' ') || '').replace(/\s+/g, ' ').trim();
 						if (snip.length > 22) snip = snip.slice(0, 22).replace(/\s+\S*$/, '') + '\u2026';
 						var nm = lab.toLowerCase() + (snip ? ' \u201c' + snip + '\u201d' : '');
 						steps.push({ title: 'Add a ' + lab + ' to ' + cname, say: 'Select ' + cname + ', open <b>Add</b>, search for <b>' + esc(lab) + '</b> and tap it.' + (snip ? ' It will become \u201c' + esc(snip) + '\u201d.' : ''), ops: [{ t: 'add', key: Wd.type, into: { s: s, r: ri, c: ci }, ref: ref, check: 'type', type: Wd.type }] });
@@ -626,7 +626,8 @@
 		if (all && !this.advancing) {
 			this.advancing = true;
 			this.el.classList.add('ag-pass');
-			setTimeout(function () { self.advancing = false; self.el.classList.remove('ag-pass'); self.next(); }, 1100);
+			var advI = this.i;
+			setTimeout(function () { self.advancing = false; self.el.classList.remove('ag-pass'); if (self.i === advI && !self.dead) self.next(); }, 1100);
 		}
 	};
 	var CAT = function (op) {
