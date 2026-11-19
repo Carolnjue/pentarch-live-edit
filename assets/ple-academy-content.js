@@ -202,6 +202,9 @@
 				} },
 				{ id: 'ts-big', name: 'One big quote', note: 'A single powerful quote centred on a dark background.', build: function () {
 					return [S([R([K([H('\u201cThis course changed my career. Six months later I run my own studio.\u201d', 'p', { size: 30, weight: '600', color: '#ffffff', align: 'center', lh: 1.4, m: { size: 22 } }, { 'in': 'fade', text: 'words' }), H('Wanjiru Kamau, founder of Kamau Creative', 'p', { size: 15, color: GOLD, align: 'center', mt: 16 })])])], { bg: '#111827', pt: 100, pb: 100 }, { width: 'narrow' })];
+				} },
+				{ id: 'ts-video', name: 'Video story with rating', note: 'A student video that opens in a pop-up, with a star rating and a short quote.', build: function () {
+					return [S([R([K([N('videobox', { src: pic('team'), label: 'Watch Achieng\u2019s story' }, { radius: 20 }, { hover: 'lift' })], { valign: 'center' }), K([N('rating', { label: 'Rated 4.9 by 300 students' }), H('\u201cI found my first client in week three.\u201d', 'p', { size: 26, weight: '700', lh: 1.35, mt: 10 }), T('<p>Achieng Otieno, web designer, Kisumu</p>', { color: '#64748b' })], { valign: 'center' })], { gap: 48, valign: 'center' })], { bg: '#fdf2f8' })];
 				} }
 			]
 		},
@@ -220,6 +223,9 @@
 				{ id: 'st-progress', name: 'Skill bars', note: 'Progress bars that fill as you scroll.', build: function () {
 					var pg = N('progress'); pg.props.items = [{ label: 'Web design', val: 92 }, { label: 'Content writing', val: 80 }, { label: 'Social media', val: 75 }];
 					return [S([R([K([title('What graduates can do', { align: 'left', mb: 16 }), T('<p>Skills measured at the end of the course.</p>', { color: '#475569' })], { valign: 'center' }), K([pg])], { gap: 40 })])];
+				} },
+				{ id: 'st-chart', name: 'Growth chart', note: 'A bar chart that shows growth year by year, beside a short explanation.', build: function () {
+					return [S([R([K([kicker('OUR GROWTH'), H('More graduates every year', 'h2', { size: 36, weight: '800' }), T('<p>Since 2023 our graduate numbers have nearly quadrupled.</p>', { color: '#475569' })], { valign: 'center' }), K([N('chart', { unit: ' graduates' })], { bg: '#ffffff', radius: 18, pt: 24, pb: 24, px: 24, shadow: '0 10px 30px rgba(0,0,0,.15)' })], { gap: 40 })], { bg: '#ecfeff' })];
 				} }
 			]
 		},
@@ -274,6 +280,9 @@
 				{ id: 'gl-carousel', name: 'Project carousel', note: 'Cards that slide sideways, three at a time.', build: function () {
 					var cr = N('carousel'); cr.props.items = [['team', 'Kilele website'], ['salon', 'Glamour salon'], ['fresh food', 'Mama Njeri\u2019s Kitchen'], ['shop front', 'Duka Bora']].map(function (x) { return { src: pic(x[0]), title: x[1], text: 'Built by our students.', href: '#' }; });
 					return [S([R([K([title('Student projects', { mb: 24 }), cr])])])];
+				} },
+				{ id: 'gl-compare', name: 'Before and after', note: 'Drag the handle to compare a website before and after the makeover.', build: function () {
+					return [S([R([K([title('Before and after the course', { mb: 20 }), N('compare', { before: pic('shop front'), after: pic('fresh food'), bl: 'Before', al: 'After' }, {}, { 'in': 'zoom-in' })])])], {}, { width: 'narrow' })];
 				} }
 			]
 		},
@@ -287,6 +296,10 @@
 				} },
 				{ id: 'fq-split', name: 'Heading beside the questions', note: 'Heading and contact button on the left, questions on the right.', build: function () {
 					return [S([R([K([H('Questions?', 'h2', { size: 40, weight: '800' }), T('<p>Can\u2019t find your answer? Talk to us.</p>', { color: '#475569' }), B('Contact us', '#contact', { mt: 8 })], {}, 1), K([N('accordion')], {}, 2)], { gap: 48 })], { bg: '#fefce8' })];
+				} },
+				{ id: 'fq-tabs', name: 'FAQs sorted into tabs', note: 'Questions grouped by topic in tabs, so people find answers faster.', build: function () {
+					var t = N('tabs'); t.props.items = [{ title: 'Courses', html: '<p><b>Do I need a laptop?</b> No, you can learn on your phone.</p><p><b>How long is a course?</b> Five days to six weeks.</p>' }, { title: 'Fees', html: '<p><b>Can I pay in instalments?</b> Yes, in two or three parts by M-Pesa.</p>' }, { title: 'Certificates', html: '<p><b>Do I get a certificate?</b> Yes, when you finish every lesson.</p>' }];
+					return [S([R([K([title('Questions people ask', { mb: 20 }), t])])], { bg: SOFT }, { width: 'narrow' })];
 				} }
 			]
 		},
@@ -306,6 +319,9 @@
 				} },
 				{ id: 'ct-dark', name: 'Dark contact band', note: 'A dark section with a form and a WhatsApp button.', build: function () {
 					return [S([R([K([H('Let\u2019s talk', 'h2', { size: 40, color: '#ffffff' }), T('<p>Prefer WhatsApp? Tap below.</p>', { color: '#cbd5e1' }), B('WhatsApp us', 'https://wa.me/254700000000', { bg: '#22c55e', radius: 999 }, null, { newtab: '1' })]), K([N('form')], { bg: '#ffffff', radius: 16, pt: 20, pb: 20, px: 20 })], { gap: 40, valign: 'center' })], { bg: INK })];
+				} },
+				{ id: 'ct-pay', name: 'Enrol and pay', note: 'Next intake dates beside an M-Pesa payment box: everything needed to join today.', build: function () {
+					return [S([R([K([H('Join the next intake', 'h2', { size: 36, weight: '800' }), N('intakes')]), K([N('mpesa')], { valign: 'center' })], { gap: 40 })], { bg: '#f0fdf4' }, { anchor: 'apply' })];
 				} }
 			]
 		},
