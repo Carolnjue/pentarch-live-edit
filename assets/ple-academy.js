@@ -56,6 +56,47 @@
 		return '<b>' + esc(s.length > 48 ? s.slice(0, 48) + '\u2026' : s) + '</b>';
 	}
 	var FREE_T = /^(text|textarea|html|url|image)$/;
+	/* Short design reasons, shown while a setting is being changed, so learners know why, not just how. */
+	var WHY = {
+		bgImg: 'A real photo makes the section feel human and trustworthy.',
+		overlay: 'A dark layer over the photo keeps white text easy to read.',
+		minH: 'A tall hero fills the first screen, so the message gets full attention.',
+		valign: 'Centring the content vertically looks balanced on every screen size.',
+		pt: 'Generous space above and below lets the content breathe.', pb: 'Generous space above and below lets the content breathe.',
+		px: 'Side padding stops text touching the edges on phones.',
+		size: 'Size creates hierarchy: the most important words should be the biggest.',
+		weight: 'Bold headlines are scanned first.',
+		color: 'Strong contrast between text and background keeps it readable.',
+		bg: 'Background colour separates sections and guides the eye down the page.',
+		radius: 'Rounded corners feel friendly and modern.',
+		shadow: 'A soft shadow lifts the card off the page so it looks clickable.',
+		align: 'Centred text suits short, punchy content; long text reads better left-aligned.',
+		gap: 'Even gaps between columns make the layout look tidy.',
+		grad1: 'A two-colour gradient adds depth without needing a photo.', grad2: 'A two-colour gradient adds depth without needing a photo.',
+		gradText: 'Gradient text makes one key line stand out. Use it once per page.',
+		ic: 'Icons in your brand colour tie the design together.',
+		mb: 'Space below groups related items and separates the rest.', mt: 'Space above separates this item from the one before.',
+		w: 'Wider columns get more attention; use them for the main message.',
+		'in': 'A gentle entrance draws the eye to new content as people scroll.',
+		delay: 'Small delays make items appear one after another, like a story.',
+		hover: 'A hover effect tells visitors this is clickable.',
+		loop: 'A slow, repeating motion catches attention. Use it on one thing only.',
+		sticky: 'A sticky menu keeps navigation in reach on long pages.',
+		text: 'Revealing words one by one slows the reader down for an important line.',
+		look: 'An outline button is quieter, so the main button stays the clear first choice.',
+		width: 'A narrow width keeps lines short and easy to read.',
+		particles: 'Moving dots add energy to a plain dark background.',
+		shadowcard: ''
+	};
+	var WHY_C = { text: 'Write for the visitor: say what they get, in plain words.', html: 'Keep it to one or two short sentences.', title: 'Short titles are scanned; long ones are skipped.', brand: 'Your name in the menu tells people where they are.', src: 'Sharp pictures of real people and real work build trust.', href: 'Every button should lead somewhere useful.', tag: 'Use one H1 per page for the main headline and H2 for section titles.', items: 'Edit the list so every item is real and specific.', cta: 'One clear action in the menu brings more enquiries.', links: 'Five links or fewer keeps the menu easy to scan.' };
+	var WHY_M = { 'in': WHY['in'], delay: WHY.delay, hover: WHY.hover, loop: WHY.loop, sticky: WHY.sticky, text: 'Revealing words one by one slows the reader down for an important line.', hide: 'Hiding the menu while scrolling down gives more room to read.' };
+	function whyFor(op) {
+		if (op.t !== 'set') return '';
+		if (op.dev) return 'Big desktop sizes are too large for phones, so phones get their own size.';
+		if (op.where === 'motion') return WHY_M[op.k] || '';
+		if (op.where === 'content') return WHY_C[op.k] || (op.k === 'width' ? WHY.width : op.k === 'look' ? WHY.look : '');
+		return op.k === 'text' ? '' : (WHY[op.k] || '');
+	}
 
 	/* ================================================================ refs */
 	/* A ref finds a node in any tree: by id, by position, or by what a section contains. */
@@ -442,6 +483,8 @@
 		var ul = h('ul', { class: 'ag-ops' });
 		(st.ops || []).forEach(function (op, k) { if (op.t !== 'note') ul.appendChild(h('li', { class: k < (self.opI || 0) ? 'ok' : (k === (self.opI || 0) ? 'now' : '') }, '<i></i><span>' + opCaption(op) + '</span>')); });
 		if (ul.children.length) this.el.appendChild(ul);
+		var curOp = (st.ops || [])[self.opI || 0], why = curOp ? whyFor(curOp) : '';
+		if (why) this.el.appendChild(h('p', { class: 'ag-why' }, '<b>Why?</b> ' + esc(why)));
 		var ctl = h('div', { class: 'ag-ctl' });
 		ctl.appendChild(h('button', { type: 'button', title: 'Previous step', 'aria-label': 'Previous step', disabled: this.i === 0 ? true : null, onclick: function () { self.jump(self.i - 1); } }, '&#9664;&#9664;'));
 		ctl.appendChild(h('button', { type: 'button', class: 'ag-play', title: (this.paused ? 'Play' : 'Pause') + ' (Space)', 'aria-label': this.paused ? 'Play' : 'Pause', onclick: function () { self.paused = !self.paused; self.drawWatch(); } }, this.paused ? '&#9654; Play' : '&#10074;&#10074; Pause'));
@@ -566,6 +609,10 @@
 		var first = -1;
 		(st.ops || []).forEach(function (op, k) { if (op.t === 'note') return; if (!oks[k] && first < 0) first = k; ul.appendChild(h('li', { class: oks[k] ? 'ok' : (k === first ? 'now' : '') }, '<i></i><span>' + opCaption(op) + '</span>')); });
 		if (ul.children.length) this.el.appendChild(ul);
+		var whyD = first >= 0 ? whyFor(st.ops[first]) : '';
+		var tip = first >= 0 ? this.mistake(st.ops[first]) : '';
+		if (tip) this.el.appendChild(h('p', { class: 'ag-oops' }, icon('bolt', 14) + ' ' + tip));
+		if (whyD) this.el.appendChild(h('p', { class: 'ag-why' }, '<b>Why?</b> ' + esc(whyD)));
 		var ctl = h('div', { class: 'ag-ctl' });
 		ctl.appendChild(h('button', { type: 'button', title: 'Previous step', disabled: this.i === 0 ? true : null, onclick: function () { self.i--; self._sig = ''; self.devSeen = {}; self.drawDo(); } }, '&#9664;'));
 		if ((st.ops || []).some(function (o2) { return o2.t === 'ack'; })) ctl.appendChild(h('button', { type: 'button', class: 'ag-show', onclick: function () { self.acked = self.i; self._sig = ''; self.drawDo(); } }, 'Got it'));
@@ -581,6 +628,23 @@
 			this.el.classList.add('ag-pass');
 			setTimeout(function () { self.advancing = false; self.el.classList.remove('ag-pass'); self.next(); }, 1100);
 		}
+	};
+	/* Spot common slips and explain how to fix them. */
+	GP.mistake = function (op) {
+		var tree = this.ed.tree;
+		if (op.t === 'add' && op.check === 'type' && op.ref && op.ref.c !== undefined) {
+			var sec = sectionOf(tree, op.ref.s); if (!sec) return '';
+			var col = resolve(tree, { s: op.ref.s, r: op.ref.r, c: op.ref.c });
+			var inCol = 0, inSec = 0;
+			if (col) C.walk(col, function (x) { if (x.type === op.type) inCol++; });
+			C.walk(sec, function (x) { if (x.type === op.type) inSec++; });
+			if (inSec > inCol && inCol <= (op.ref.w.nth || 0)) return 'The ' + esc(typeLabel(op.type)) + ' went into another column. Press <b>Undo</b>, select <b>column ' + (op.ref.c + 1) + '</b> first, then add it again. Or drag it in <b>Layers</b>.';
+			if (!col) return 'That column is missing. Check the row has enough columns.';
+		}
+		if (op.t === 'add' && op.check === 'row' && typeof op.ref.s === 'number' && tree.children.length > op.ref.s + 1 && !resolve(tree, op.ref)) return 'There are more sections than expected. Delete the extra one (select it and press the \u2715) so the new section is number ' + (op.ref.s + 1) + '.';
+		if (op.t === 'set' && op.dev && this.ed.device === 'd') return 'This setting is only for ' + (op.dev === 'm' ? 'phones' : 'tablets') + '. Switch to the ' + (op.dev === 'm' ? 'phone' : 'tablet') + ' view at the top first.';
+		if (op.t === 'set' && !op.dev && this.ed.device !== 'd' && op.where === 'style') { var info = fieldInfo(op.type, op.k, op.store === 'props' ? 'bgx' : 'style'); if (info && info.r) return 'You are in ' + (this.ed.device === 'm' ? 'phone' : 'tablet') + ' view, so this would only change smaller screens. Switch back to desktop view first.'; }
+		return '';
 	};
 	GP.next = function () { this.i++; this._sig = ''; this.devSeen = {}; if (this.o.onStep) this.o.onStep(this.i); this.drawDo(); };
 	GP.showMe = async function (st, oks) {

@@ -174,3 +174,6 @@ body:has(.st-modal) .ag-tip{display:none}
 @media (max-height:520px){.ag-done span{width:40px;height:40px}.ag-done h4{margin:6px 0 2px}.ag-ctl.col button{min-height:34px}}
 @media (max-width:600px){.pe-logo{display:none}.pe-top .pe-exit span{display:none}}
 .al-tnav{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:28px}
+.ag-why{margin:6px 0 0;padding:8px 10px;border-radius:10px;background:#fefce8;color:#713f12;font-size:12.5px;line-height:1.4}.ag-why b{color:#a16207}
+@media (max-width:900px){.ag.ag-compact .ag-why{display:none}}
+.ag-oops{margin:6px 0 0;padding:8px 10px;border-radius:10px;background:#fff1f2;color:#9f1239;font-size:12.5px;line-height:1.4;display:flex;gap:6px;align-items:flex-start}.ag-oops svg{flex:none;margin-top:2px}
