@@ -257,7 +257,7 @@
 		{
 			id: 'cta', name: 'Calls to action', icon: 'bolt', color: '#e11d48',
 			blurb: 'A call to action tells people exactly what to do now. Make it impossible to miss.',
-			tips: ['One message and one button.', 'Use a colour that contrasts with the rest of the page.', 'Make the button say what happens: "Chat on WhatsApp", not "Click here".'],
+			tips: ['One message and one button.', 'Use a colour that contrasts with the rest of the page.', 'Make the button say what happens: \u201cChat on WhatsApp\u201d, not \u201cClick here\u201d.'],
 			avoid: ['A weak button label like \u201cSubmit\u201d or \u201cClick here\u201d.', 'A call to action that blends into the page.', 'Asking for too much at once.'],
 			designs: [
 				{ id: 'cta-box', name: 'Gradient call-to-action box', demo: 1, note: 'A rounded gradient box with a strong button.', build: function () {
