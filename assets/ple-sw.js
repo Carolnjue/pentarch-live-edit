@@ -3,7 +3,7 @@ var CACHE = 'ple-studio-__VERSION__';
 var ASSETS = '__ASSETS__';
 self.addEventListener('install', function (e) {
 	e.waitUntil(caches.open(CACHE).then(function (c) {
-		return c.addAll(['ple-core.js', 'ple-editor.js', 'ple-lessons.js', 'ple-studio.js', 'ple-editor.css', 'ple-studio.css', 'icon.svg'].map(function (f) { return ASSETS + f; })).catch(function () { });
+		return c.addAll(['ple-core.js', 'ple-editor.js', 'ple-widgets.js', 'ple-runtime.js', 'ple-runtime.css', 'ple-lessons.js', 'ple-academy-content.js', 'ple-academy.js', 'ple-studio.js', 'ple-editor.css', 'ple-studio.css', 'ple-academy.css', 'icon.svg'].map(function (f) { return ASSETS + f; })).catch(function () { });
 	}).then(function () { return self.skipWaiting(); }));
 });
 self.addEventListener('activate', function (e) {

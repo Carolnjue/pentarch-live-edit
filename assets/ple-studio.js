@@ -80,7 +80,7 @@
 	}
 
 	/* ------------------------------------------------------------ shell */
-	var NAV = [['home', 'Home', 'home'], ['learn', 'Learn', 'book'], ['projects', 'Projects', 'code'], ['classes', 'Classes', 'users'], ['me', 'Me', 'award']];
+	var NAV = [['home', 'Home', 'home'], ['learn', 'Learn', 'book'], ['lab', 'Design Lab', 'star'], ['projects', 'Projects', 'code'], ['classes', 'Classes', 'users'], ['me', 'Me', 'award']];
 	function shell(active, content) {
 		app.innerHTML = '';
 		var wrap = h('div', { class: 'st' });
@@ -178,6 +178,7 @@
 
 		var quick = h('div', { class: 'st-quick' });
 		[['Open the builder', 'Design a page with drag and drop', 'rows', function () { newProject('builder', 'starter'); }],
+		['Design Lab', 'Watch, build and practise real designs', 'star', function () { location.hash = '#/lab'; }],
 		['Write code', 'HTML, CSS and JavaScript playground', 'code', function () { newProject('code'); }],
 		[me.teacher ? 'Your classes' : 'Join a class', me.teacher ? 'Create a class and track students' : 'Enter the code from your trainer', 'users', function () { location.hash = '#/classes'; }]].forEach(function (q) {
 			quick.appendChild(h('button', { type: 'button', class: 'st-qc', onclick: q[3] }, '<span>' + icon(q[2], 22) + '</span><b>' + q[0] + '</b><small>' + q[1] + '</small>'));
@@ -619,26 +620,26 @@
 		var lesson = o.lesson;
 		var lastOk = false;
 		var taskBtn = lesson ? [{ text: 'Task', title: 'Your task and checklist', icon: 'bolt', cls: 'st-taskb', on: function (ed) { taskModal(ed); } }] : [];
-		var exitTo = lesson ? '#/lesson/' + lesson.id : '#/projects';
+		var exitTo = o.exitTo || (lesson ? '#/lesson/' + lesson.id : '#/projects');
 		var ed = new E({
 			mount: mount,
 			tree: pr.tree && pr.tree.children ? pr.tree : C.emptyPage(),
 			title: pr.title,
 			brand: 'PLE',
-			exitLabel: lesson ? 'Lesson' : 'Projects',
+			exitLabel: o.exitLabel || (lesson ? 'Lesson' : 'Projects'),
 			onExit: function () {
 				var leave = function () { if (o.onExit) o.onExit(ed.tree); location.hash = exitTo; if (location.hash === exitTo) route(); };
-				if (ed.dirty) { ed.save(); setTimeout(leave, 700); } else leave();
+				if (ed.dirty && !o.noSave) { ed.save(); setTimeout(leave, 700); } else leave();
 			},
-			storeKey: 'ple:draft:' + pr.id,
-			sideNote: lesson ? '<b>Lesson task:</b> ' + lesson.task + '<br><button type="button" class="st-inline-b" onclick="document.querySelector(\'.st-taskb\').click()">See checklist</button>' : '',
+			storeKey: o.noSave ? '' : 'ple:draft:' + pr.id,
+			sideNote: o.sideNote || lesson ? o.sideNote || '<b>Lesson task:</b> ' + lesson.task + '<br><button type="button" class="st-inline-b" onclick="document.querySelector(\'.st-taskb\').click()">See checklist</button>' : '',
 			runtime: S.runtime,
 			upload: function (file) {
 				var fd = new FormData(); fd.append('file', file);
 				return api('upload', { method: 'POST', form: fd }).then(function (r) { return r.url; });
 			},
 			onChange: function (e) { if (o.onTree) { var ok = o.onTree(e.tree); if (ok && !lastOk) e.toast('All task items are ticked. Open Task to complete the lesson.', 'ok'); lastOk = ok; } },
-			extraButtons: taskBtn.concat([
+			extraButtons: (o.buttons || []).concat(taskBtn, o.noShare ? [] : [
 				{ text: 'Share', title: 'Publish and share', icon: 'globe', on: function (e) { e.save(); shareModal(pr); } },
 				{ text: 'Submit', title: 'Submit to a class', icon: 'users', on: function (e) { e.save(); submitModal(pr); } }
 			]),
@@ -646,13 +647,14 @@
 				var d = e.data();
 				api('projects', { method: 'POST', body: { title: d.title + ' (code)', mode: 'code', html: C.pretty(d.html), css: d.css.replace(/}/g, '}\n'), js: '' } }).then(function (np) { state.projects = null; toast('Code project created', 'ok'); location.hash = '#/project/' + np.id; }).catch(function (x) { toast(x.message, 'err'); });
 			} }],
-			save: function (d) {
+			save: o.noSave ? null : function (d) {
 				return api('projects', { method: 'POST', body: { id: pr.id, title: d.title, mode: 'builder', tree: d.tree, html: d.html, css: d.css } }).then(function () { state.projects = null; pr.title = d.title; if (o.onTree) o.onTree(d.tree); return 'Saved'; });
 			}
 		});
 		/* Restore a local draft if the last save did not reach the server. */
-		try { var dr = JSON.parse(localStorage.getItem('ple:draft:' + pr.id) || 'null'); if (dr && dr.tree && dr.at > pr.updated * 1000 + 2000) { ed.tree = dr.tree; ed.commit(); ed.renderAll(); ed.toast('Restored your unsaved changes from this phone.'); } } catch (e) { }
+		if (!o.noSave) try { var dr = JSON.parse(localStorage.getItem('ple:draft:' + pr.id) || 'null'); if (dr && dr.tree && dr.at > pr.updated * 1000 + 2000) { ed.tree = dr.tree; ed.commit(); ed.renderAll(); ed.toast('Restored your unsaved changes from this phone.'); } } catch (e) { }
 		if (o.onTree) lastOk = o.onTree(ed.tree);
+		if (o.onReady) o.onReady(ed);
 		function taskModal(e) {
 			var ul = h('ul', { class: 'st-checks' });
 			var ok = renderChecks(ul, lesson, { tree: e.tree, start: o.lesson ? (function () { var m = {}; var st = store.get('start:' + lesson.id); if (st) C.walk(st, function (n) { m[n.id] = n; }); return m; })() : {}, startOrder: ((store.get('start:' + lesson.id) || {}).children || []).map(function (n) { return n.id; }).join() });
@@ -890,9 +892,10 @@
 			case 'classes': return viewClasses();
 			case 'class': return viewClass(parts[1]);
 			case 'me': return viewMe();
-			default: return go404();
+			default: if (window.PLEAcademy && window.PLEAcademy.route(parts)) return; return go404();
 		}
 	}
+	window.PLEStudio = { S: S, api: api, toast: toast, modal: modal, shell: shell, page: page, openEditor: openEditor, loadProjects: loadProjects, state: state, store: store, picUrl: picUrl, saveProgress: saveProgress, done: done, route: route, go404: go404, projectGrid: projectGrid };
 	window.addEventListener('hashchange', route);
 	window.addEventListener('online', function () { toast('Back online', 'ok'); });
 	window.addEventListener('offline', function () { toast('You are offline. Work is kept on this phone.', 'warn'); });

@@ -428,7 +428,7 @@
 			box.appendChild(g);
 		}
 		box.appendChild(h('button', { type: 'button', class: 'pe-wide', onclick: function () { self.showTab('site'); setTimeout(function () { var i = self.panel.querySelector('.pe-imp input'); if (i) i.focus(); }, 50); } }, 'Import any web page as layers'));
-		if (search && search.nextSibling) p.insertBefore(box, search.nextSibling.nextSibling || null); else p.appendChild(box);
+		if (search && search.nextSibling) p.insertBefore(box, search.nextSibling); else p.appendChild(box);
 		return r;
 	});
 	wrap('panelEdit', function (orig, args) {

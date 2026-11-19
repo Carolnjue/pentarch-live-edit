@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
 
 final class PLE2 {
 
-	const VERSION  = '2.3.0';
+	const VERSION  = '2.4.0';
 	const NS       = 'ple/v2';
 	const PROJECT  = 'ple_project';
 	const KLASS    = 'ple_class';
@@ -447,6 +447,7 @@ final class PLE2 {
 			array( '/studio/me', 'GET', 'st_me', $user ),
 			array( '/studio/profile', 'POST', 'st_profile', $user ),
 			array( '/studio/progress', 'POST', 'st_progress', $user ),
+			array( '/studio/lab', 'POST', 'st_lab', $user ),
 			array( '/studio/projects', 'GET', 'st_projects', $user ),
 			array( '/studio/projects', 'POST', 'st_project_save', $user ),
 			array( '/studio/projects/(?P<id>\d+)', 'GET', 'st_project_get', $user ),
@@ -738,6 +739,37 @@ final class PLE2 {
 	public static function st_logout() {
 		wp_logout();
 		return array( 'ok' => true );
+	}
+
+	/* Design Lab progress: demos watched, tutorials and practice finished (with scores). */
+	public static function lab( $uid ) {
+		$p = json_decode( (string) get_user_meta( $uid, '_ple_lab', true ), true );
+		return is_array( $p ) ? $p : array();
+	}
+
+	public static function st_lab( $req ) {
+		$uid = get_current_user_id();
+		$p   = self::lab( $uid );
+		$id  = substr( preg_replace( '/[^a-z0-9-]/', '', (string) $req['id'] ), 0, 60 );
+		if ( '' === $id ) {
+			return new WP_Error( 'ple_bad', 'Missing id', array( 'status' => 400 ) );
+		}
+		$e = isset( $p[ $id ] ) && is_array( $p[ $id ] ) ? $p[ $id ] : array();
+		foreach ( array( 'watched', 'guided', 'done' ) as $k ) {
+			if ( $req[ $k ] ) {
+				$e[ $k ] = 1;
+			}
+		}
+		if ( null !== $req['score'] ) {
+			$e['score'] = max( isset( $e['score'] ) ? (int) $e['score'] : 0, max( 0, min( 100, (int) $req['score'] ) ) );
+		}
+		$e['at']  = time();
+		$p[ $id ] = $e;
+		if ( count( $p ) > 400 ) {
+			$p = array_slice( $p, -400, null, true );
+		}
+		update_user_meta( $uid, '_ple_lab', wp_slash( wp_json_encode( $p ) ) );
+		return $p;
 	}
 
 	private static function progress( $uid ) {
@@ -1276,6 +1308,7 @@ final class PLE2 {
 			'teacherSignup' => '' !== $s['teacher_code'],
 			'me'       => $uid ? self::user_payload( $uid ) : null,
 			'progress' => $uid ? self::progress( $uid ) : new stdClass(),
+			'lab'      => $uid ? (object) self::lab( $uid ) : new stdClass(),
 			'lostPass' => wp_lostpassword_url( self::studio_url() ),
 			'wpAdmin'  => $uid && current_user_can( 'edit_pages' ) ? admin_url( 'edit.php?post_type=page' ) : '',
 			'runtime'  => self::runtime_urls(),
@@ -1293,6 +1326,7 @@ final class PLE2 {
 <link rel="apple-touch-icon" href="<?php echo esc_url( self::$url . 'assets/icon-192.png' ); ?>">
 <link rel="stylesheet" href="<?php echo esc_url( self::asset( 'ple-editor.css' ) ); ?>">
 <link rel="stylesheet" href="<?php echo esc_url( self::asset( 'ple-studio.css' ) ); ?>">
+<link rel="stylesheet" href="<?php echo esc_url( self::asset( 'ple-academy.css' ) ); ?>">
 <style>:root{--brand:<?php echo esc_html( sanitize_hex_color( $s['color'] ) ? $s['color'] : '#2563eb' ); ?>}</style>
 </head>
 <body>
@@ -1303,6 +1337,8 @@ final class PLE2 {
 <script src="<?php echo esc_url( self::asset( 'ple-widgets.js' ) ); ?>"></script>
 <script src="<?php echo esc_url( self::asset( 'ple-editor.js' ) ); ?>"></script>
 <script src="<?php echo esc_url( self::asset( 'ple-lessons.js' ) ); ?>"></script>
+<script src="<?php echo esc_url( self::asset( 'ple-academy-content.js' ) ); ?>"></script>
+<script src="<?php echo esc_url( self::asset( 'ple-academy.js' ) ); ?>"></script>
 <script src="<?php echo esc_url( self::asset( 'ple-studio.js' ) ); ?>"></script>
 <script>if('serviceWorker' in navigator){addEventListener('load',function(){navigator.serviceWorker.register(<?php echo wp_json_encode( self::studio_url( 'sw.js' ) ); ?>,{scope:<?php echo wp_json_encode( wp_parse_url( self::studio_url(), PHP_URL_PATH ) ); ?>}).catch(function(){});});}</script>
 </body>
