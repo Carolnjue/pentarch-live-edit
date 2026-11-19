@@ -925,6 +925,7 @@
 				new Guide(ed, steps, 'watch', { title: d.name, onExit: function () { location.hash = back; }, onDone: function () { mark(d.id, { watched: 1 }); }, endButtons: [
 					{ text: 'Build it with the guide', cls: 'pri', on: function () { location.hash = '#/lab/' + t.id + '/' + d.id + '/guided'; } },
 					{ text: 'Preview it full screen', on: function (gd) { gd.ed.preview(); } },
+					{ text: 'See the HTML and CSS it made', on: function (gd) { if (gd.ed.codeP.hidden) gd.ed.toggleCode(); gd.el.classList.add('min'); } },
 					{ text: 'Watch again', on: function (gd) { gd.destroy(); x.route(); } },
 					{ text: 'Back to ' + t.name, on: function () { location.hash = back; } }] });
 			} });
@@ -946,6 +947,7 @@
 					onPass: function (r, gd) { ed.save(); mark(d.id, { done: 1, score: r.pct }); passModal(t, d, ed, nextHref); },
 					endButtons: [
 						{ text: 'Save to My parts', cls: 'pri', on: function () { ed.save(); savePart(t, d, ed.tree); } },
+						{ text: 'See the HTML and CSS you made', on: function (gd) { if (ed.codeP.hidden) ed.toggleCode(); gd.el.classList.add('min'); } },
 						{ text: nextD ? 'Next design' : 'Back to ' + t.name, on: function () { location.hash = nextHref; } }, reset]
 				});
 				if (mode === 'guided' && !pr.tree.children.length) ed.showTab('add');
@@ -1207,8 +1209,15 @@
 			c.innerHTML = '<span class="al-sci">' + icon('bolt', 22) + '</span><div><b>New here? Take the 5-minute tour</b><small>A guide walks you through the builder on a real website, one tap at a time.</small></div><span class="st-btn sm pri">Start the tour</span>';
 			return c;
 		},
-		card: function () {
+		card: function (lessonId) {
 			var s2 = this.summary();
+			var map = { 'pb-hero': 'hero', 'pb-structure': 'services', 'pb-mobile': 'hero', 'pb-layers': 'about' };
+			var tp = lessonId && map[lessonId] && topicById(map[lessonId]);
+			if (tp) {
+				var c1 = h('a', { class: 'al-promo', href: '#/lab/' + tp.id });
+				c1.innerHTML = '<span class="al-sci">' + icon(tp.icon, 22) + '</span><div><b>Practise more: ' + esc(tp.name) + '</b><small>Watch ' + tp.designs.filter(function (d) { return d.demo; }).length + ' demos and try ' + tp.designs.length + ' designs in the Design Lab.</small></div><span class="st-btn sm pri">Open</span>';
+				return c1;
+			}
 			var c = h('a', { class: 'al-promo', href: '#/lab' });
 			c.innerHTML = '<span class="al-sci">' + icon('star', 22) + '</span><div><b>Design Lab</b><small>' + (s2.built ? s2.built + ' of ' + s2.all + ' designs built. Keep practising real sections.' : 'Watch real sections being built, build them with a guide, then practise on your own.') + '</small></div><span class="st-btn sm pri">' + (s2.built ? 'Continue' : 'Open') + '</span>';
 			return c;

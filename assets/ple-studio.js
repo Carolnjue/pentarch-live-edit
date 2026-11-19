@@ -270,7 +270,7 @@
 		learn.appendChild(task);
 		learn.appendChild(foot);
 		if (l.kind === 'code') codeLesson(l, p, body, checks, next);
-		else { builderLesson(l, p, task, checks, next); if (window.PLEAcademy) learn.insertBefore(window.PLEAcademy.card(), foot); }
+		else { builderLesson(l, p, task, checks, next); if (window.PLEAcademy) learn.insertBefore(window.PLEAcademy.card(l.id), foot); }
 		shell('learn', p);
 	}
 	function renderChecks(ul, l, ctx) {

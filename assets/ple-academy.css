@@ -181,3 +181,4 @@ body:has(.st-modal) .ag-tip{display:none}
 .al-cmp{display:grid;grid-template-columns:1fr;gap:14px}
 @media (min-width:900px){.al-cmp{grid-template-columns:1fr 1fr}}
 .al-cmpc b{display:block;margin-bottom:6px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
+.st-task+.al-promo{margin-top:16px}
