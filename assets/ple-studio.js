@@ -175,6 +175,7 @@
 		var go = h('a', { class: 'st-btn pri', href: st.next ? '#/lesson/' + st.next.id : (me.cert || '#/projects'), target: !st.next && me.cert ? '_blank' : null }, st.next ? (st.done ? 'Continue' : 'Start the course') + ' ' + icon('arrow', 16) : 'View certificate');
 		hero.querySelector('.st-cont-t').appendChild(go);
 		p.appendChild(hero);
+		if (window.PLEAcademy && !me.teacher) { var sc = window.PLEAcademy.startCard(); if (sc) p.appendChild(sc); }
 
 		var quick = h('div', { class: 'st-quick' });
 		[['Open the builder', 'Design a page with drag and drop', 'rows', function () { newProject('builder', 'starter'); }],
@@ -219,6 +220,7 @@
 	function viewLearn() {
 		var st = stats();
 		var p = page('Practical Web Design', st.done + ' of ' + st.total + ' lessons complete. Work through them in order, or jump to any lesson.');
+		if (window.PLEAcademy) p.appendChild(window.PLEAcademy.card());
 		p.appendChild(modulesList(false));
 		shell('learn', p);
 	}
@@ -268,7 +270,7 @@
 		learn.appendChild(task);
 		learn.appendChild(foot);
 		if (l.kind === 'code') codeLesson(l, p, body, checks, next);
-		else builderLesson(l, p, task, checks, next);
+		else { builderLesson(l, p, task, checks, next); if (window.PLEAcademy) learn.insertBefore(window.PLEAcademy.card(), foot); }
 		shell('learn', p);
 	}
 	function renderChecks(ul, l, ctx) {
@@ -797,7 +799,7 @@
 				if (!c.members.length) { body.appendChild(h('div', { class: 'st-empty' }, 'No students yet. Share the class code above.')); return; }
 				var t = h('div', { class: 'st-table' });
 				c.members.sort(function (a, b) { return b.pct - a.pct; }).forEach(function (m) {
-					t.appendChild(h('div', { class: 'st-tr' }, '<div class="st-who"><b>' + esc(m.name) + '</b><small>' + esc(m.email) + '</small></div><div class="st-prog"><div class="st-bar"><i style="width:' + m.pct + '%"></i></div><small>' + m.done + '/' + LESSONS.length + ' lessons &middot; active ' + ago(m.last) + (m.cert ? ' &middot; <b>Certified</b>' : '') + '</small></div>'));
+					t.appendChild(h('div', { class: 'st-tr' }, '<div class="st-who"><b>' + esc(m.name) + '</b><small>' + esc(m.email) + '</small></div><div class="st-prog"><div class="st-bar"><i style="width:' + m.pct + '%"></i></div><small>' + m.done + '/' + LESSONS.length + ' lessons &middot; ' + (m.lab || 0) + ' designs built &middot; active ' + ago(m.last) + (m.cert ? ' &middot; <b>Certified</b>' : '') + '</small></div>'));
 					var rm = h('button', { type: 'button', class: 'st-x', title: 'Remove from class', 'aria-label': 'Remove ' + m.name, onclick: function () { if (confirm('Remove ' + m.name + ' from this class?')) api('classes/' + c.id + '/remove', { method: 'POST', body: { student: m.id } }).then(function () { viewClass(c.id, 'students'); }); } }, '&times;');
 					t.lastChild.appendChild(rm);
 				});
@@ -865,6 +867,7 @@
 		cert.innerHTML = '<div>' + ring(st.pct, 90) + '</div><div><h3>Practical Web Design certificate</h3><p>' + (me.cert ? 'Earned! Share it with employers and clients.' : 'Complete all ' + st.total + ' lessons to earn it. ' + (st.total - st.done) + ' to go.') + '</p></div>';
 		if (me.cert) cert.appendChild(h('a', { class: 'st-btn pri', href: me.cert, target: '_blank' }, 'View certificate'));
 		p.appendChild(cert);
+		if (window.PLEAcademy) p.appendChild(window.PLEAcademy.card());
 		var list = h('div', { class: 'st-menu' });
 		if (installEvt) list.appendChild(h('button', { type: 'button', onclick: function () { installEvt.prompt(); } }, icon('bolt', 18) + '<span>Install the app on this phone</span>'));
 		else list.appendChild(h('div', { class: 'st-tip' }, icon('bolt', 18) + '<span><b>Tip:</b> in your browser menu choose <b>Add to Home screen</b> to open Studio like an app.</span>'));

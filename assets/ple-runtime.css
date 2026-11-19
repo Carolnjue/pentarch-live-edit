@@ -204,7 +204,7 @@ canvas[data-particles]{position:absolute;inset:0;width:100%;height:100%;z-index:
 .pl-mq-t{display:flex;width:max-content;gap:var(--mg,48px);animation:fx-mq var(--ms,30s) linear infinite}
 .pl-marquee:hover .pl-mq-t{animation-play-state:paused}
 .pl-mq-t>*{flex:none;display:flex;align-items:center}
-.pl-mq-t img{height:var(--lh,46px);width:auto;filter:grayscale(1);opacity:.75;transition:.3s}.pl-mq-t img:hover{filter:none;opacity:1}
+.pl-marquee .pl-mq-t img{height:var(--lh,46px);width:auto;max-width:none;filter:grayscale(1);opacity:.75;transition:.3s}.pl-mq-t img:hover{filter:none;opacity:1}
 .pl-mq-rev .pl-mq-t{animation-direction:reverse}
 @keyframes fx-mq{to{transform:translateX(-50%)}}
 

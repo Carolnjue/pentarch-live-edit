@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
 
 final class PLE2 {
 
-	const VERSION  = '2.4.0';
+	const VERSION  = '2.4.1';
 	const NS       = 'ple/v2';
 	const PROJECT  = 'ple_project';
 	const KLASS    = 'ple_class';
@@ -1147,7 +1147,16 @@ final class PLE2 {
 						$last = max( $last, (int) $p[ $id ]['at'] );
 					}
 				}
-				$out['members'][] = array( 'id' => $m->ID, 'name' => $m->display_name, 'email' => $m->user_email, 'done' => $done, 'pct' => round( 100 * $done / $total ), 'last' => $last, 'cert' => (bool) get_user_meta( $m->ID, '_ple_cert', true ) );
+				$lab = 0;
+				foreach ( self::lab( $m->ID ) as $lk => $le ) {
+					if ( 0 === strpos( (string) $lk, 'start' ) || 'makeover' === $lk ) {
+						continue;
+					}
+					if ( ! empty( $le['done'] ) || ! empty( $le['guided'] ) ) {
+						$lab++;
+					}
+				}
+				$out['members'][] = array( 'id' => $m->ID, 'name' => $m->display_name, 'email' => $m->user_email, 'done' => $done, 'pct' => round( 100 * $done / $total ), 'last' => $last, 'lab' => $lab, 'cert' => (bool) get_user_meta( $m->ID, '_ple_cert', true ) );
 			}
 		}
 		return $out;

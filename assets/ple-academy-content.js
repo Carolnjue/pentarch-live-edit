@@ -13,6 +13,9 @@
 	var H = function (text, tag, style, fx) { return N('heading', { text: text, tag: tag || 'h2' }, style, fx); };
 	var T = function (html, style, fx) { return N('text', { html: html }, style, fx); };
 	var B = function (text, href, style, fx, props) { return N('button', Object.assign({ text: text, href: href || '#' }, props || {}), style, fx); };
+	/* Simple wordmark logos for practice (fictional organisations). */
+	var logo = function (name, c) { return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="220" height="60" viewBox="0 0 220 60"><circle cx="26" cy="30" r="16" fill="' + c + '"/><text x="50" y="38" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="700" fill="#1e293b">' + name + '</text></svg>'); };
+	var LOGOS = function () { return [['Ujuzi Hub', '#2563eb'], ['Savanna Bank', '#16a34a'], ['Kesho NGO', '#ea580c'], ['Mji Media', '#db2777'], ['Pwani Co.', '#0891b2']].map(function (x) { return { src: logo(x[0], x[1]), alt: x[0], href: '' }; }); };
 	var INK = '#0f172a', BRAND = '#1d4ed8', GOLD = '#f59e0b', SOFT = '#f8fafc';
 	var kicker = function (t, c) { return H(t, 'p', { size: 13, weight: '800', color: c || BRAND, mb: 8 }); };
 	var title = function (t, extra) { return H(t, 'h2', Object.assign({ size: 38, weight: '800', align: 'center', m: { size: 28 } }, extra || {})); };
@@ -90,6 +93,43 @@
 				} },
 				{ id: 'nav-mega', name: 'Mega menu header', note: 'Big dropdown panels for sites with many pages, like courses by category.', build: function () {
 					return [S([R([K([N('megamenu')])])], { pt: 0, pb: 0, px: 0 }, { tag: 'header', width: 'full' })];
+				} }
+			]
+		},
+		{
+			id: 'about', name: 'About sections', icon: 'users', color: '#0d9488',
+			blurb: 'Tell your story so visitors trust the people behind the business.',
+			tips: ['Show real people or real work, not only words.', 'Lead with what you believe and who you help, then the facts.', 'Finish with a clear next step.'],
+			designs: [
+				{ id: 'ab-split', name: 'Picture and story', demo: 1, note: 'A rounded photo beside your story, with a checklist and a button.', build: function () {
+					return [S([R([
+						K([N('image', { src: pic('team'), alt: 'Our trainers with students' }, { radius: 24, shadow: '0 20px 50px rgba(0,0,0,.25)' }, { 'in': 'fade-right' })]),
+						K([kicker('ABOUT US'), H('Trainers who do the work every day', 'h2', { size: 38, weight: '800', m: { size: 28 } }), T('<p>We started in 2019 with one classroom and a belief: practical skills change lives faster than theory.</p>', { color: '#475569' }), N('list', { items: 'Working professionals as trainers\nSmall classes and mentoring\nCertificates employers recognise' }), B('Meet the team', '#team', { mt: 10, radius: 10 })], { valign: 'center' })
+					], { gap: 56, valign: 'center' })], { bg: SOFT }, { anchor: 'about' })];
+				} },
+				{ id: 'ab-values', name: 'Mission and values', note: 'A short mission statement, then three value boxes with pictures.', build: function () {
+					var v = function (src, t, x) { return K([N('imagebox', { src: pic(src), title: t, text: x }, {}, { hover: 'lift' })]); };
+					return [S([R([K([kicker('OUR MISSION'), title('Skills for every young African with a phone'), T('<p>We make professional training practical, affordable and mobile.</p>', { align: 'center', color: '#475569', mb: 24 })])]), R([v('office', 'Practical', 'Every lesson ends with something you made.'), v('team', 'Together', 'Learn in a class, never alone.'), v('shop front', 'For work', 'Skills that clients pay for.')], { gap: 24 })])];
+				} },
+				{ id: 'ab-quote', name: 'Founder\u2019s note', note: 'A personal note from the founder with a star rating for proof.', build: function () {
+					return [S([R([K([N('image', { src: pic('salon'), alt: 'Our founder' }, { radius: 999, maxw: 80, ratio: '1/1', align: 'center' })], { valign: 'center' }, 1), K([H('\u201cWe built the school we wished we had.\u201d', 'p', { size: 28, weight: '700', lh: 1.35 }), T('<p>Caroline Njue, founder</p>', { color: '#475569' }), N('rating')], { valign: 'center' }, 2)], { gap: 40 })], { bg: '#f0fdfa' }, { width: 'narrow' })];
+				} }
+			]
+		},
+		{
+			id: 'team', name: 'Team and trust', icon: 'award', color: '#4f46e5',
+			blurb: 'Faces and logos make a business feel real and safe to choose.',
+			tips: ['Use the same photo shape and size for every person.', 'Name, role and one line each. Put details in a pop-up.', 'Show partner logos in a calm grey strip.'],
+			designs: [
+				{ id: 'tm-cards', name: 'Team cards', demo: 1, note: 'Three team members with photos; tap a card for their full bio.', build: function () {
+					var m = function (src, n, r) { return K([N('team', { src: pic(src), name: n, role: r }, {}, { hover: 'lift' })]); };
+					return [S([R([K([title('Meet your trainers', { mb: 24 })])]), R([m('team', 'Caroline Njue', 'Lead trainer, design'), m('office', 'Brian Otieno', 'Data analysis'), m('salon', 'Faith Wanjiru', 'Media and animation')], { gap: 24 })], {}, { anchor: 'team' })];
+				} },
+				{ id: 'tm-logos', name: 'Moving logo strip', note: 'Partner logos that glide across the screen.', build: function () {
+					return [S([R([K([T('<p>Trusted by organisations across East Africa</p>', { align: 'center', color: '#64748b', size: 14 }), (function () { var l = N('logos', { speed: 25 }); l.props.items = LOGOS(); return l; })()])])], { bg: SOFT, pt: 32, pb: 32 })];
+				} },
+				{ id: 'tm-marquee', name: 'Scrolling words banner', note: 'A bold band of words that scrolls forever, great between sections.', build: function () {
+					return [S([R([K([N('marquee', { text: 'Web design \u2022 Data analysis \u2022 AI animation \u2022 Public relations \u2022 Research', speed: 20 }, { color: '#ffffff', size: 28 })])])], { bg: '#4f46e5', pt: 18, pb: 18, px: 0 }, { width: 'full' })];
 				} }
 			]
 		},

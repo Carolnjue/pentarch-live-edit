@@ -486,6 +486,7 @@
 	GP.finish = function () {
 		var self = this;
 		this.ring.classList.remove('on'); this.cur.classList.remove('on');
+		try { var ed = this.ed; if (ed.isPhone()) ed.closeSheet(); ed.select(null); if (ed.device !== 'd') ed.setDevice('d'); if (ed.win) ed.win.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { }
 		this.el.innerHTML = '';
 		this.head(this.mode === 'watch' ? 'Demo' : 'Guided');
 		this.el.appendChild(h('div', { class: 'ag-done' }, '<span>' + icon('check', 26) + '</span><h4>' + esc(this.mode === 'watch' ? 'That is how it is done.' : 'You built it!') + '</h4><p>' + esc(this.mode === 'watch' ? 'Now try it yourself. Doing it once makes it stick.' : 'Every step is done. Look at it on the phone view too.') + '</p>'));
@@ -945,6 +946,23 @@
 		};
 	}
 
+	/* Any section in any website can be saved as a reusable part. */
+	if (g.PLEEditor) {
+		var origEdit = EP.panelEdit;
+		EP.panelEdit = function (p) {
+			var r = origEdit.apply(this, arguments), self = this;
+			if (!g.PLEStudio || !this.o.storeKey || !this.sel) return r;
+			var hit = C.find(this.tree, this.sel); if (!hit || hit.node.type !== 'section') return r;
+			var foot = p.querySelector('.pe-efoot');
+			var b = h('button', { type: 'button', class: 'pe-wide', onclick: function () {
+				var name = prompt('Name this part (for example "Hero with photo"):', 'My section'); if (!name) return;
+				X().api('projects', { method: 'POST', body: { title: 'Part: ' + name, mode: 'builder', lesson: 'part-own', tree: pageOf([C.reId(C.clone(hit.node))]) } }).then(function () { partsCache = null; X().state.projects = null; self.toast('Saved to My parts.', 'ok'); }).catch(function (e) { self.toast(e.message, 'err'); });
+			} }, icon('star', 14) + ' Save this section to My parts');
+			if (foot) p.insertBefore(b, foot); else p.appendChild(b);
+			return r;
+		};
+	}
+
 	/* ================================================================ router */
 	g.PLEAcademy = {
 		route: function (parts) {
@@ -958,6 +976,23 @@
 			if (parts[0] === 'start') { runStart(); return true; }
 			if (parts[0] === 'makeover') { runMakeover(parts[1] === 'do' ? 'do' : 'watch'); return true; }
 			return false;
+		},
+		summary: function () {
+			var all = 0, built = 0, watched = 0;
+			topics().forEach(function (t) { t.designs.forEach(function (d) { all++; var e = stateOf(d); if (e.done || e.guided) built++; if (e.watched) watched++; }); });
+			return { all: all, built: built, watched: watched, started: !!(progress().start || {}).guided, makeover: !!(progress().makeover || {}).guided };
+		},
+		startCard: function () {
+			var s2 = this.summary(); if (s2.started) return null;
+			var c = h('a', { class: 'al-promo al-new', href: '#/start' });
+			c.innerHTML = '<span class="al-sci">' + icon('bolt', 22) + '</span><div><b>New here? Take the 5-minute tour</b><small>A guide walks you through the builder on a real website, one tap at a time.</small></div><span class="st-btn sm pri">Start the tour</span>';
+			return c;
+		},
+		card: function () {
+			var s2 = this.summary();
+			var c = h('a', { class: 'al-promo', href: '#/lab' });
+			c.innerHTML = '<span class="al-sci">' + icon('star', 22) + '</span><div><b>Design Lab</b><small>' + (s2.built ? s2.built + ' of ' + s2.all + ' designs built. Keep practising real sections.' : 'Watch real sections being built, build them with a guide, then practise on your own.') + '</small></div><span class="st-btn sm pri">' + (s2.built ? 'Continue' : 'Open') + '</span>';
+			return c;
 		},
 		recipe: recipe, Guide: Guide, opOk: opOk, resolve: resolve, makeoverSteps: makeoverSteps, startSteps: startSteps
 	};
