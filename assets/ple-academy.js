@@ -624,7 +624,11 @@
 		var op = first >= 0 ? st.ops[first] : null;
 		if (op && op.ref && (op.t === 'set' || op.t === 'select')) {
 			var node = resolve(this.ed.tree, op.ref), el = this.canvasEl(node);
-			if (el && !this.ed.isPhone()) { var r = this.rectOf(el); if (r.height > 4) this.showRing(r); }
+			if (el && !this.ed.isPhone()) {
+				var r = this.rectOf(el); if (r.height > 4) this.showRing(r);
+				var cr0 = this.el.getBoundingClientRect(), hit0 = !(r.left + r.width < cr0.left || r.left > cr0.right || r.top + r.height < cr0.top || r.top > cr0.bottom);
+				if (hit0 && r.width < innerWidth * 0.45) this.el.classList.toggle('ag-left');
+			}
 			/* On phones, move the page so the item is not hidden behind this card. */
 			var fk = this.i + ':' + first;
 			if (el && this.ed.isPhone() && fk !== this._focusKey && !this.ed.el.classList.contains('sheet')) {

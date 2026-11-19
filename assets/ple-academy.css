@@ -183,3 +183,4 @@ body:has(.st-modal) .ag-tip{display:none}
 .al-cmpc b{display:block;margin-bottom:6px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
 .st-task+.al-promo{margin-top:16px}
 @media (max-width:900px){.ag.ag-bottom{top:auto;bottom:74px}.pe.sheet~.ag.ag-bottom,.ag.ag-compact.ag-bottom{top:56px;bottom:auto}}
+@media (min-width:901px){.ag.ag-left{right:auto;left:calc(min(320px,30vw) + 18px)}}
