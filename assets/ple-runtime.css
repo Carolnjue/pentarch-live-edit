@@ -274,3 +274,4 @@ canvas[data-particles]{position:absolute;inset:0;width:100%;height:100%;z-index:
 .pl-post[hidden]{display:none}
 @media(max-width:1024px){.pl-pgrid{grid-template-columns:repeat(min(var(--pc,3),2),minmax(0,1fr))}}
 @media(max-width:767px){.pl-pgrid{grid-template-columns:1fr}.pl-fsearch{width:100%}}
+html.ple-fx,html.ple-fx body{overflow-x:clip}
