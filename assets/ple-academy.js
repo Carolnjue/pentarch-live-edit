@@ -776,6 +776,11 @@
 		};
 		sec('Watch, then build with a guide', 'Watch the demo to see every click. Then build it yourself with step-by-step checks.', demos);
 		sec('Practise on your own', 'No demo for these. Use what you learned, check your work, and ask for hints if you get stuck.', prac);
+		var all = topics(), ti = all.indexOf(t), nt = all[ti + 1], pt = all[ti - 1];
+		var nav = h('nav', { class: 'al-tnav' });
+		nav.appendChild(pt ? h('a', { class: 'st-btn ghost', href: '#/lab/' + pt.id }, '&larr; ' + esc(pt.name)) : h('a', { class: 'st-btn ghost', href: '#/lab' }, '&larr; Design Lab'));
+		nav.appendChild(nt ? h('a', { class: 'st-btn', href: '#/lab/' + nt.id }, esc(nt.name) + ' &rarr;') : h('a', { class: 'st-btn', href: '#/lab' }, 'Client briefs &rarr;'));
+		p.appendChild(nav);
 		x.shell('lab', p);
 	}
 	function designCard(t, d) {

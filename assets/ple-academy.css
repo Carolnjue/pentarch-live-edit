@@ -173,3 +173,4 @@ body:has(.st-modal) .ag-tip{display:none}
 @media (max-width:900px){.ag.ag-fin{max-height:calc(100vh - 66px)}}
 @media (max-height:520px){.ag-done span{width:40px;height:40px}.ag-done h4{margin:6px 0 2px}.ag-ctl.col button{min-height:34px}}
 @media (max-width:600px){.pe-logo{display:none}.pe-top .pe-exit span{display:none}}
+.al-tnav{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:28px}
