@@ -151,7 +151,7 @@
 .st-cont+.al-promo{margin-top:14px}
 .al-new{background:linear-gradient(135deg,#1d4ed8,#7c3aed);border:0;color:#fff}.al-new small{color:#e0e7ff}.al-new .al-sci{background:rgba(255,255,255,.18);color:#fff}.al-new .st-btn{background:#fff;color:#1d4ed8;border-color:#fff}
 .al-briefs{display:grid;grid-template-columns:1fr;gap:12px}
-@media (min-width:760px){.al-briefs{grid-template-columns:repeat(3,1fr)}}
+@media (min-width:760px){.al-briefs{grid-template-columns:repeat(2,1fr)}}@media (min-width:1200px){.al-briefs{grid-template-columns:repeat(4,1fr)}}
 .al-brief{display:flex;flex-direction:column;gap:4px;padding:18px;border-radius:var(--r);background:#fff;border:1px solid var(--line);text-decoration:none;color:var(--ink);background-image:radial-gradient(circle at 100% 0,#fef3c7 0,transparent 40%);transition:transform .18s,box-shadow .18s}
 .al-brief:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(15,23,42,.1)}
 .al-brief small{color:#b45309;font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.05em}
