@@ -29,6 +29,8 @@ final class PLE_Updater {
 		add_filter( 'auto_update_plugin', array( __CLASS__, 'auto' ), 20, 2 );
 		add_action( 'admin_post_ple2_check_updates', array( __CLASS__, 'check_now' ) );
 		add_action( 'upgrader_process_complete', array( __CLASS__, 'done' ), 10, 2 );
+		add_filter( 'upgrader_pre_install', array( __CLASS__, 'remember_active' ), 5, 2 );
+		add_filter( 'upgrader_post_install', array( __CLASS__, 'keep_active' ), 20, 3 );
 	}
 
 	private static function current() {
@@ -132,6 +134,26 @@ final class PLE_Updater {
 		wp_update_plugins();
 		wp_safe_redirect( admin_url( 'plugins.php?plugin_status=upgrade' ) );
 		exit;
+	}
+
+	/* Updates must never leave the site without Live Edit, even for a moment. */
+	public static function remember_active( $ok, $extra ) {
+		if ( isset( $extra['plugin'] ) && self::$file === $extra['plugin'] && is_plugin_active( self::$file ) ) {
+			update_option( 'ple_was_active', 1, false );
+		}
+		return $ok;
+	}
+
+	public static function keep_active( $ok, $extra, $result ) {
+		if ( isset( $extra['plugin'] ) && self::$file === $extra['plugin'] && get_option( 'ple_was_active' ) ) {
+			$active = (array) get_option( 'active_plugins', array() );
+			if ( ! in_array( self::$file, $active, true ) ) {
+				$active[] = self::$file;
+				update_option( 'active_plugins', array_values( array_unique( $active ) ) );
+			}
+			delete_option( 'ple_was_active' );
+		}
+		return $ok;
 	}
 
 	public static function done() {

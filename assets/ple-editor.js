@@ -302,6 +302,10 @@
 			var at = n.props.attrs || {};
 			if (n.props.leaf && !/^(style|script|svg)$/.test(n.props.tag)) snip = String(n.props.html || '').replace(/<[^>]+>/g, ' ');
 			if (n.props.tag === 'img') snip = at.alt || '';
+			if (!snip && !n.props.leaf && /^(section|row|box)$/.test(this.role(n))) {
+				var hd = null; C.walk(n, function (k) { if (!hd && k.type === 'el' && /^h[1-6]$/.test(k.props.tag)) { hd = k; return false; } });
+				if (hd) snip = String(hd.props.html || '').replace(/<[^>]+>/g, ' ');
+			}
 			if (!snip && at['class']) snip = '.' + String(at['class']).trim().split(/\s+/).slice(0, 2).join('.');
 			if (/^h[1-6]$/.test(n.props.tag)) base += ' ' + n.props.tag.toUpperCase();
 		}
@@ -563,8 +567,11 @@
 		if (!this.tree.children.length) { p.appendChild(h('p', { class: 'pe-empty-l' }, 'Nothing here yet. Add a section first.')); return; }
 		var ul = h('ul', { class: 'pe-tree', role: 'tree' });
 		var dragId = null;
+		var showCode = !!this.showCode, hiddenCode = 0;
 		var item = function (n, depth) {
 			if (n.type === 'cmt') return null;
+			var r0 = self.role(n);
+			if (!showCode && (r0 === 'css' || r0 === 'script')) { hiddenCode++; return null; }
 			var kids = (n.children || []).filter(function (k) { return k.type !== 'cmt'; });
 			if (self.collapsed[n.id] === undefined && C.NATIVE[n.type]) self.collapsed[n.id] = depth >= 2 && !(n.type === 'el' && /^div$/.test(n.props.tag) && depth < 2);
 			var open = !self.collapsed[n.id];
@@ -596,6 +603,7 @@
 			return li;
 		};
 		this.tree.children.forEach(function (n) { var c = item(n, 0); if (c) ul.appendChild(c); });
+		if (hiddenCode || showCode) p.appendChild(h('button', { type: 'button', class: 'pe-codetoggle', onclick: function () { self.showCode = !showCode; self.renderPanel(); } }, showCode ? 'Hide styles and scripts' : 'Show styles and scripts (' + hiddenCode + ')'));
 		p.appendChild(ul);
 		var sel = this.sel && this.el.querySelector('.pe-node.on'); if (sel) setTimeout(function () { sel.scrollIntoView({ block: 'nearest' }); }, 0);
 	};

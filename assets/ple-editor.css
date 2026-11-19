@@ -74,7 +74,7 @@
 .t-section>.pe-nl{font-weight:700}.t-row>.pe-nl,.t-column>.pe-nl{font-weight:600}
 .pe-nl{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
 .pe-na{display:none;gap:1px}
-.pe-node:hover .pe-na,.pe-node.on .pe-na{display:flex}
+.pe-node:hover .pe-na{display:flex}
 .pe-na button{border:0;background:none;width:24px;height:26px;border-radius:5px;color:var(--mut)}
 .pe-na button:hover{background:#fff;color:var(--ink)}
 .pe-bc{display:flex;align-items:center;flex-wrap:wrap;gap:2px;margin-bottom:10px;font-size:12px}
@@ -167,3 +167,5 @@
 .pe-node.pe-muted .pe-nl{color:#94a3b8;font-style:italic}
 .pe-node.r-section>.pe-nl{font-weight:700}.pe-node.r-row>.pe-nl,.pe-node.r-column>.pe-nl,.pe-node.r-block>.pe-nl{font-weight:600}
 .pe-node.r-section .pe-ni,.pe-node.r-block .pe-ni{color:#7c3aed}.pe-node.r-row .pe-ni{color:#0d9488}.pe-node.r-column .pe-ni{color:#f59e0b}
+.pe-codetoggle{display:block;width:100%;margin:10px 0 4px;border:1px dashed var(--line);background:#fff;border-radius:9px;padding:8px;color:var(--mut);font-size:12.5px}
+@media (pointer:coarse){.pe-node.on .pe-na{display:flex}}
