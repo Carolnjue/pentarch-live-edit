@@ -850,6 +850,20 @@
 		p.appendChild(how);
 		var hd = h('div', { class: 'al-hrow' }, '<h2 class="st-h2">Design lessons</h2><span class="al-count">' + doneN + ' of ' + all + ' designs built</span>');
 		p.appendChild(hd);
+		var sq = h('input', { type: 'search', class: 'al-search', placeholder: 'Find a design, e.g. pricing, gradient, form\u2026', 'aria-label': 'Find a design' });
+		var sres = h('div', { class: 'al-sres' });
+		sq.addEventListener('input', function () {
+			var q = sq.value.trim().toLowerCase(); sres.innerHTML = '';
+			if (q.length < 2) return;
+			var n = 0;
+			topics().forEach(function (t) { t.designs.forEach(function (d) {
+				if (n > 12 || (t.name + ' ' + d.name + ' ' + d.note).toLowerCase().indexOf(q) < 0) return; n++;
+				var e = stateOf(d);
+				sres.appendChild(h('a', { class: 'al-sr', href: '#/lab/' + t.id + '/' + d.id + '/' + (d.demo ? 'watch' : 'practise') }, '<span class="al-sri" style="--tc:' + t.color + '">' + icon(t.icon, 16) + '</span><span><b>' + esc(d.name) + '</b><small>' + esc(t.name) + ' &middot; ' + (d.demo ? 'Demo' : 'Practice') + (e.done || e.guided ? ' &middot; built' : '') + '</small></span>'));
+			}); });
+			if (!n) sres.innerHTML = '<p class="al-sub">No designs match. Try another word.</p>';
+		});
+		p.appendChild(sq); p.appendChild(sres);
 		var grid = h('div', { class: 'al-topics' });
 		topics().forEach(function (t) {
 			var n = t.designs.length, dn = t.designs.filter(function (d) { var e = stateOf(d); return e.done || e.guided; }).length;

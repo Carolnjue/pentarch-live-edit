@@ -214,3 +214,7 @@ body:has(.st-modal) .ag-tip{display:none}
 .st-demo-ph{border-color:#0f172a;box-shadow:0 20px 40px rgba(15,23,42,.15)}
 .st-demo-code{background:#0f172a;border-color:#0f172a}
 .st-auth{box-shadow:0 30px 80px rgba(15,23,42,.12);border:1px solid #e2e8f0}
+.al-search{width:100%;max-width:520px;border:1px solid var(--line);border-radius:12px;padding:11px 14px;background:#fff;margin:0 0 10px}
+.al-sres{display:grid;grid-template-columns:1fr;gap:6px;margin-bottom:12px}@media (min-width:760px){.al-sres{grid-template-columns:repeat(2,1fr)}}
+.al-sr{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:12px;background:#fff;border:1px solid var(--line);text-decoration:none;color:var(--ink)}.al-sr:hover{border-color:var(--brand)}
+.al-sr small{display:block;color:var(--mut);font-size:12px}.al-sri{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:none;background:color-mix(in srgb,var(--tc) 12%,#fff);color:var(--tc)}
