@@ -35,6 +35,7 @@
 	var SWATCHES = ['#0f172a', '#ffffff', '#f8fafc', '#2563eb', '#1d4ed8', '#0ea5e9', '#16a34a', '#f59e0b', '#dc2626', '#7c3aed', '#db2777', '#475569'];
 
 	function Editor(opts) {
+		if (opts && opts.runtime) C.RUNTIME = opts.runtime;
 		this.o = Object.assign({ title: 'Untitled page', brand: 'PLE', save: null, exitUrl: '', exitLabel: 'Exit', pickImage: null, upload: null, storeKey: '', extraButtons: [], onChange: null, sideNote: '' }, opts);
 		this.tree = this.o.tree && this.o.tree.children ? C.clone(this.o.tree) : C.starterPage();
 		this.sel = null; this.device = 'd'; this.tab = 'add'; this.etab = 'content';
@@ -147,7 +148,8 @@
 			this.renderCanvas();
 			return;
 		}
-		var doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style id="pe-page"></style><style>' + EDIT_CSS + '</style></head><body><div id="pe-root"></div><div id="pe-tb" hidden></div><div id="pe-drop" hidden></div></body></html>';
+		var rt = this.o.runtime || {};
+		var doc = '<!DOCTYPE html><html data-ple-editing><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' + (rt.css ? '<link rel="stylesheet" href="' + esc(rt.css) + '">' : '') + '<style id="pe-page"></style><style>' + EDIT_CSS + '</style></head><body><div id="pe-root"></div><div id="pe-tb" hidden></div><div id="pe-drop" hidden></div>' + (rt.js ? '<script src="' + esc(rt.js) + '"><\/script>' : '') + '</body></html>';
 		this.frame.addEventListener('load', function () {
 			self.doc = self.frame.contentDocument;
 			self.win = self.frame.contentWindow;
@@ -221,6 +223,7 @@
 	};
 	P.templateDoc = function (r) {
 		var tpl = this.o.pageTemplate;
+		tpl = tpl.replace(/<html\b/i, '<html data-ple-editing');
 		var out = tpl.indexOf('<!--PLE-ROOT-->') > -1 ? tpl.replace('<!--PLE-ROOT-->', function () { return r.html; }) : tpl;
 		var head = '<style id="pe-page">' + r.css + '</style><style>' + EDIT_CSS + NOANIM + '</style>';
 		out = /<\/head>/i.test(out) ? out.replace(/<\/head>/i, function () { return head + '</head>'; }) : head + out;
@@ -318,6 +321,8 @@
 		var r = C.render(this.tree, { editing: true });
 		this.styleEl.textContent = r.css;
 		this.root.innerHTML = r.html;
+		var win = this.win, root = this.root;
+		if (win && win.PLERun) { try { win.PLERun.init(root); } catch (e) { } } else if (win) setTimeout(function () { if (win.PLERun) win.PLERun.init(root); }, 400);
 		if (!this.tree.children.length) this.root.innerHTML = '<div class="pe-blank"><b>Your page is empty</b><span>Open <em>Add</em> and choose a ready-made section, or start with an empty one.</span></div>';
 		this.markSel();
 	};
@@ -544,10 +549,24 @@
 		};
 		if (this.o.sideNote) p.appendChild(h('div', { class: 'pe-note' }, this.o.sideNote));
 		p.appendChild(h('p', { class: 'pe-hint' }, this.isPhone() ? 'Tap an item to add it after what you have selected.' : 'Click to add after the selected item, or drag onto the page.'));
-		p.appendChild(h('h4', { class: 'pe-h' }, 'Widgets'));
-		var g = h('div', { class: 'pe-grid' });
-		Object.keys(W).forEach(function (k) { if (!W[k].container) g.appendChild(tile(k, W[k].label, W[k].icon)); });
-		p.appendChild(g);
+		var q = (this._addQ || '').toLowerCase();
+		var search = h('input', { type: 'search', class: 'pe-search', placeholder: 'Search ' + Object.keys(W).filter(function (k) { return !W[k].container; }).length + ' widgets and sections\u2026', value: this._addQ || '', 'aria-label': 'Search widgets' });
+		search.addEventListener('input', function () { self._addQ = search.value; var pos = search.selectionStart; self.renderPanel(); var ns = self.panel.querySelector('.pe-search'); if (ns) { ns.focus(); ns.setSelectionRange(pos, pos); } });
+		p.appendChild(search);
+		var groups = C.WGROUPS || [['basic', 'Widgets']];
+		groups.forEach(function (gr) {
+			var keys = Object.keys(W).filter(function (k) { return !W[k].container && (W[k].group || 'basic') === gr[0] && (!q || W[k].label.toLowerCase().indexOf(q) > -1); });
+			if (!keys.length) return;
+			p.appendChild(h('h4', { class: 'pe-h' }, esc(gr[1])));
+			var g = h('div', { class: 'pe-grid' });
+			keys.forEach(function (k) { g.appendChild(tile(k, W[k].label, W[k].icon)); });
+			p.appendChild(g);
+		});
+		if (q) {
+			var tp = C.TEMPLATES.filter(function (t) { return t[1].toLowerCase().indexOf(q) > -1; });
+			if (tp.length) { p.appendChild(h('h4', { class: 'pe-h' }, 'Ready-made sections')); var l2 = h('div', { class: 'pe-tpls' }); tp.forEach(function (t) { l2.appendChild(tile('tpl:' + t[0], t[1], 'rows', 'pe-tpl')); }); p.appendChild(l2); }
+			return;
+		}
 		p.appendChild(h('h4', { class: 'pe-h' }, 'Structure'));
 		var s = h('div', { class: 'pe-grid' });
 		s.appendChild(tile('row:1', 'Row, 1 column', 'square'));
@@ -635,13 +654,16 @@
 		var tabs = h('div', { class: 'pe-etabs' });
 		var simple = nat && n.type !== 'el';
 		if (simple) this.etab = 'content';
-		[['content', 'Content'], ['style', 'Style'], ['adv', 'Advanced']].forEach(function (t) {
+		[['content', 'Content'], ['style', 'Style'], ['motion', 'Motion'], ['adv', 'Advanced']].forEach(function (t) {
 			if (simple && t[0] !== 'content') return;
+			if (t[0] === 'motion' && nat && (n.props.tag === 'style' || n.props.tag === 'script')) return;
 			tabs.appendChild(h('button', { type: 'button', class: self.etab === t[0] ? 'on' : '', onclick: function () { self.etab = t[0]; self.renderPanel(); } }, t[1]));
 		});
 		p.appendChild(tabs);
 		var body = h('div', { class: 'pe-fields' });
-		if (this.etab === 'content' && nat) {
+		if (this.etab === 'motion') {
+			this.motionPanel(body, n);
+		} else if (this.etab === 'content' && nat) {
 			this.nativeContent(body, n);
 		} else if (this.etab === 'content') {
 			(w.fields || []).forEach(function (f) { body.appendChild(self.field(f, n.props[f.k], function (v) { n.props[f.k] = v; self.change(); })); });
@@ -653,7 +675,28 @@
 		} else if (this.etab === 'style') {
 			var dev = { d: 'Desktop', t: 'Tablet', m: 'Phone' }[this.device];
 			body.appendChild(h('div', { class: 'pe-devnote d-' + this.device }, this.device === 'd' ? 'Editing styles for <b>all screens</b>. Switch to tablet or phone view at the top to set sizes for smaller screens.' : 'Editing <b>' + dev + '</b> styles. Fields marked <span class="pe-r">' + dev + '</span> only change smaller screens.'));
-			(w.styleFields || []).forEach(function (f) {
+			var effects = [
+				{ k: 'grad1', l: 'Gradient background: colour 1', t: 'color' }, { k: 'grad2', l: 'Gradient background: colour 2', t: 'color' },
+				{ k: 'gangle', l: 'Gradient angle', t: 'num', u: 'deg' },
+				{ k: 'glass', l: 'Frosted glass', t: 'toggle' },
+				{ k: 'gradText', l: 'Gradient text', t: 'toggle' }, { k: 'g1', l: 'Gradient text: colour 1', t: 'color' }, { k: 'g2', l: 'Gradient text: colour 2', t: 'color' },
+				{ k: 'op', l: 'Opacity (0 to 1)', t: 'num', u: '' }
+			];
+			var layout = [
+				{ k: 'flex', l: 'Arrange children', t: 'select', o: [['', 'Default'], ['flex', 'Flex (in a line)'], ['grid', 'Grid']], r: 1 },
+				{ k: 'fdir', l: 'Direction', t: 'select', o: [['', 'Row'], ['column', 'Column'], ['row-reverse', 'Row, reversed'], ['column-reverse', 'Column, reversed']], r: 1 },
+				{ k: 'gcols', l: 'Grid columns', t: 'num', u: '', r: 1 },
+				{ k: 'fwrap', l: 'Wrap', t: 'select', o: [['', 'No wrap'], ['wrap', 'Wrap']], r: 1 },
+				{ k: 'jc', l: 'Spread', t: 'select', o: [['', 'Start'], ['center', 'Centre'], ['flex-end', 'End'], ['space-between', 'Space between'], ['space-around', 'Space around']], r: 1 },
+				{ k: 'ai', l: 'Align', t: 'select', o: [['', 'Stretch'], ['flex-start', 'Top / start'], ['center', 'Centre'], ['flex-end', 'Bottom / end']], r: 1 },
+				{ k: 'fgap', l: 'Gap', t: 'num', u: 'px', r: 1 },
+				{ k: 'w', l: 'Width', t: 'num', u: 'px', r: 1 }, { k: 'mw', l: 'Maximum width', t: 'num', u: 'px', r: 1 },
+				{ k: 'pos', l: 'Position', t: 'select', o: [['', 'Normal'], ['relative', 'Relative (nudge)'], ['absolute', 'Free placement (absolute)']], r: 1 },
+				{ k: 'top', l: 'Top', t: 'num', u: 'px', r: 1 }, { k: 'left', l: 'Left', t: 'num', u: 'px', r: 1 }, { k: 'right', l: 'Right', t: 'num', u: 'px', r: 1 }, { k: 'bottom', l: 'Bottom', t: 'num', u: 'px', r: 1 },
+				{ k: 'z', l: 'Layer order (z-index)', t: 'num', u: '' }
+			];
+			var group = function (title, list) { var dt = h('details', { class: 'pe-grp' }); dt.appendChild(h('summary', null, title)); list.forEach(function (f) { addStyleField(f, dt); }); body.appendChild(dt); };
+			var addStyleField = function (f, target) {
 				var resp = f.r && self.device !== 'd', key = self.device;
 				var val = resp ? ((n.style[key] || {})[f.k]) : n.style[f.k];
 				var fe = self.field(f, val, function (v) {
@@ -663,8 +706,22 @@
 				}, resp ? n.style[f.k] : null);
 				if (resp) fe.querySelector('label').insertAdjacentHTML('beforeend', ' <span class="pe-r">' + dev + '</span>');
 				if (self.device !== 'd' && !f.r) fe.classList.add('pe-dim');
-				body.appendChild(fe);
-			});
+				(target && target.nodeType ? target : body).appendChild(fe);
+			};
+			(w.styleFields || []).forEach(function (f) { addStyleField(f); });
+			if ((w.styleFields || []).length || nat) {
+				var isCont = nat ? !n.props.leaf : C.isContainer(n.type);
+				group('Effects', effects);
+				if (isCont || nat) group('Layout and position', layout);
+				if (isCont) {
+					var bgd = h('details', { class: 'pe-grp' }); bgd.appendChild(h('summary', null, 'Backgrounds and dividers')); body.appendChild(bgd);
+					var bx = [{ k: 'bgVideo', l: 'Background video (YouTube link or .mp4)', t: 'url' }, { k: 'particles', l: 'Particle background colour', t: 'color' },
+						{ k: 'divTop', l: 'Shape divider at the top', t: 'select', o: [['', 'None']].concat(Object.keys(C.DIVIDERS).map(function (k) { return [k, k.charAt(0).toUpperCase() + k.slice(1)]; })) },
+						{ k: 'divBot', l: 'Shape divider at the bottom', t: 'select', o: [['', 'None']].concat(Object.keys(C.DIVIDERS).map(function (k) { return [k, k.charAt(0).toUpperCase() + k.slice(1)]; })) },
+						{ k: 'divColor', l: 'Divider colour', t: 'color' }, { k: 'divH', l: 'Divider height', t: 'num', u: 'px' }];
+					bx.forEach(function (f) { bgd.appendChild(self.field(f, n.props[f.k], function (v) { if (v === '' || v === null) delete n.props[f.k]; else n.props[f.k] = v; self.change(); })); });
+				}
+			}
 			if (!(w.styleFields || []).length) body.appendChild(h('p', { class: 'pe-hint' }, 'This item has no visual style. Edit its code in Content.'));
 		} else if (nat) {
 			this.nativeAdvanced(body, n);
@@ -682,6 +739,48 @@
 		if (n.type === 'block') { p.appendChild(foot); return; }
 		[['&#8593; Up', function () { self.move(n.id, -1); }], ['&#8595; Down', function () { self.move(n.id, 1); }], ['&#10697; Copy', function () { self.duplicate(n.id); }], ['&#10005; Delete', function () { self.remove(n.id); }]].forEach(function (b) { foot.appendChild(h('button', { type: 'button', onclick: b[1] }, b[0])); });
 		p.appendChild(foot);
+	};
+
+	/* ------------------------------------------------------------ motion */
+	P.motionPanel = function (body, n) {
+		var self = this, fx = n.props.fx = n.props.fx || {};
+		var set = function (k) { return function (v) { if (v === '' || v === null) delete fx[k]; else fx[k] = v; if (!Object.keys(fx).length) delete n.props.fx; self.change(); }; };
+		var add = function (f, k) { body.appendChild(self.field(f, fx[k], set(k))); };
+		body.appendChild(h('div', { class: 'pe-devnote' }, 'Effects play on the live page. In the editor they are paused so you can work; press <b>Play</b> to see the entrance.'));
+		body.appendChild(h('h4', { class: 'pe-h' }, 'Entrance animation'));
+		add({ k: 'in', l: 'Animation', t: 'select', o: [['', 'None'], ['fade', 'Fade in'], ['fade-up', 'Fade up'], ['fade-down', 'Fade down'], ['fade-left', 'Slide from left'], ['fade-right', 'Slide from right'], ['zoom-in', 'Zoom in'], ['zoom-out', 'Zoom out'], ['flip-up', 'Flip up'], ['flip-left', 'Flip from side'], ['rotate-in', 'Rotate in'], ['blur-in', 'Blur in'], ['slide-up', 'Rise up'], ['bounce', 'Bounce in'], ['mask', 'Wipe reveal']] }, 'in');
+		add({ k: 'dur', l: 'Duration (ms)', t: 'num', u: '' }, 'dur');
+		add({ k: 'delay', l: 'Delay (ms)', t: 'num', u: '' }, 'delay');
+		add({ k: 'text', l: 'Reveal text', t: 'select', o: [['', 'All at once'], ['words', 'Word by word'], ['letters', 'Letter by letter']] }, 'text');
+		add({ k: 'once', l: 'Play', t: 'select', o: [['', 'Once, the first time it appears'], ['0', 'Every time it scrolls into view']] }, 'once');
+		body.appendChild(h('button', { type: 'button', class: 'pe-wide', onclick: function () { self.playFx(n.id); } }, '\u25B6 Play entrance'));
+		body.appendChild(h('h4', { class: 'pe-h' }, 'Hover effect'));
+		add({ k: 'hover', l: 'On mouse over', t: 'select', o: [['', 'None'], ['lift', 'Lift with shadow'], ['grow', 'Grow'], ['shrink', 'Shrink'], ['glow', 'Glow'], ['rotate', 'Tilt slightly'], ['tilt', '3D tilt (follows mouse)'], ['magnetic', 'Magnetic (follows mouse)'], ['shine', 'Shine sweep'], ['brighten', 'Brighten'], ['grey', 'Colour on hover'], ['underline', 'Underline grow']] }, 'hover');
+		body.appendChild(h('h4', { class: 'pe-h' }, 'Continuous animation'));
+		add({ k: 'loop', l: 'Loop', t: 'select', o: [['', 'None'], ['float', 'Float'], ['pulse', 'Pulse'], ['bounce', 'Bob'], ['heartbeat', 'Heartbeat'], ['sway', 'Sway'], ['spin', 'Spin'], ['kenburns', 'Slow zoom (Ken Burns)'], ['gradient', 'Moving gradient background']] }, 'loop');
+		body.appendChild(h('h4', { class: 'pe-h' }, 'Scroll effect'));
+		add({ k: 'scroll', l: 'While scrolling', t: 'select', o: [['', 'None'], ['parallax', 'Parallax (vertical)'], ['parallax-x', 'Parallax (sideways)'], ['fade', 'Fade in and out'], ['scale', 'Grow in the middle'], ['zoom-in', 'Zoom as it rises'], ['rotate', 'Rotate'], ['skew', 'Skew'], ['blur', 'Blur at the edges']] }, 'scroll');
+		add({ k: 'speed', l: 'Strength (1 to 10)', t: 'num', u: '' }, 'speed');
+		body.appendChild(h('h4', { class: 'pe-h' }, 'Sticky'));
+		add({ k: 'sticky', l: 'Stick when scrolling', t: 'select', o: [['', 'No'], ['top', 'Stick to the top'], ['bottom', 'Stick to the bottom']] }, 'sticky');
+		add({ k: 'offset', l: 'Gap from the top', t: 'num', u: 'px' }, 'offset');
+		add({ k: 'hide', l: 'Hide when scrolling down, show when scrolling up', t: 'toggle' }, 'hide');
+		add({ k: 'sd', l: 'Sticky on', t: 'select', o: [['', 'All screens'], ['d', 'Desktop only'], ['dt', 'Desktop and tablet'], ['tm', 'Tablet and phone'], ['m', 'Phone only']] }, 'sd');
+		body.appendChild(h('h4', { class: 'pe-h' }, 'Where effects run'));
+		add({ k: 'devices', l: 'Animations on', t: 'select', o: [['', 'All screens'], ['d', 'Desktop only'], ['dt', 'Desktop and tablet'], ['m', 'Phone only']] }, 'devices');
+	};
+	P.playFx = function (id) {
+		var e = this.doc && this.doc.querySelector('[data-ple="' + id + '"]'); if (!e) return;
+		var hit = C.find(this.tree, id); var fx = hit && hit.node.props.fx || {};
+		if (!fx['in'] && !fx.text) return this.toast('Choose an entrance animation first.', 'warn');
+		var win = this.win;
+		e.setAttribute('data-fx-in', fx['in'] || 'text');
+		e.style.setProperty('--fx-dur', (fx.dur || 700) + 'ms'); e.style.setProperty('--fx-delay', '0ms');
+		if (fx.text && win.PLERun && !e._fxText) { e.setAttribute('data-fx-text', fx.text); win.PLERun.textfx(e.parentNode); }
+		this.doc.documentElement.classList.add('ple-fx');
+		e.classList.add('pe-play'); e.classList.remove('fx-on'); void e.offsetWidth;
+		setTimeout(function () { e.classList.add('fx-on'); }, 60);
+		setTimeout(function () { e.classList.remove('pe-play'); }, (+fx.dur || 700) + 1500);
 	};
 
 	/* ------------------------------------------------------------ native HTML panels */
@@ -793,6 +892,28 @@
 				if (f.u) nr.appendChild(h('span', null, f.u));
 				nr.appendChild(h('button', { type: 'button', class: 'pe-x', title: 'Reset', onclick: function () { ni.value = ''; set(''); } }, '&times;'));
 				wrap.appendChild(nr);
+				break;
+			case 'items':
+				var list = Array.isArray(v) ? v : [];
+				var box2 = h('div', { class: 'pe-items' });
+				var redraw = function () {
+					box2.innerHTML = '';
+					list.forEach(function (it, i) {
+						var open = self._openItem === f.k + i;
+						var head = h('div', { class: 'pe-it-h' + (open ? ' on' : '') });
+						head.appendChild(h('button', { type: 'button', class: 'pe-it-t', onclick: function () { self._openItem = open ? null : f.k + i; redraw(); } }, '<b>' + (i + 1) + '.</b> ' + esc(String(it[f.title] || 'Item ' + (i + 1)).replace(/<[^>]+>/g, '').slice(0, 40))));
+						[['&#8593;', 'Move up', function () { if (i > 0) { list.splice(i - 1, 0, list.splice(i, 1)[0]); set(list); redraw(); } }], ['&#8595;', 'Move down', function () { if (i < list.length - 1) { list.splice(i + 1, 0, list.splice(i, 1)[0]); set(list); redraw(); } }], ['&#10697;', 'Copy', function () { list.splice(i + 1, 0, JSON.parse(JSON.stringify(it))); set(list); redraw(); }], ['&#10005;', 'Remove', function () { list.splice(i, 1); set(list); redraw(); }]].forEach(function (b) { head.appendChild(h('button', { type: 'button', title: b[1], 'aria-label': b[1], onclick: b[2] }, b[0])); });
+						box2.appendChild(head);
+						if (open) {
+							var bodyI = h('div', { class: 'pe-it-b' });
+							(f.sub || []).forEach(function (sf) { bodyI.appendChild(self.field(sf, it[sf.k], function (val) { it[sf.k] = val; set(list); if (sf.k === f.title) head.querySelector('.pe-it-t').innerHTML = '<b>' + (i + 1) + '.</b> ' + esc(String(val || '').slice(0, 40)); })); });
+							box2.appendChild(bodyI);
+						}
+					});
+					box2.appendChild(h('button', { type: 'button', class: 'pe-wide', onclick: function () { var blank = {}; (f.sub || []).forEach(function (sf) { blank[sf.k] = list.length ? '' : ''; }); if (list.length) blank = JSON.parse(JSON.stringify(list[list.length - 1])); list.push(blank); self._openItem = f.k + (list.length - 1); set(list); redraw(); } }, '+ Add item'));
+				};
+				redraw();
+				wrap.appendChild(box2);
 				break;
 			case 'toggle':
 				var tg = h('label', { class: 'pe-tg' });
@@ -934,7 +1055,7 @@
 	};
 
 	/* Styles used only inside the editing canvas. */
-	var NOANIM = '*,*:before,*:after{transition:none!important;animation-duration:.001s!important;animation-delay:0s!important;animation-iteration-count:1!important;scroll-behavior:auto!important}ple-t{display:inline}html{scroll-behavior:auto!important}';
+	var NOANIM = '[data-ple-editing] [data-fx-in]:not(.pe-play),[data-ple-editing] [data-fx-in]:not(.pe-play) .fx-ch{opacity:1!important;transform:none!important;filter:none!important;clip-path:none!important}' + '*,*:before,*:after{transition:none!important;animation-duration:.001s!important;animation-delay:0s!important;animation-iteration-count:1!important;scroll-behavior:auto!important}ple-t{display:inline}html{scroll-behavior:auto!important}';
 	var EDIT_CSS = [
 		'html,body{margin:0;min-height:100%}body{padding-bottom:120px}',
 		'[data-ple]{cursor:pointer}',
@@ -950,7 +1071,9 @@
 		'#pe-tb span{padding:0 6px}#pe-tb button{all:unset;cursor:pointer;width:26px;height:24px;display:grid;place-items:center;border-radius:5px;font-size:14px}#pe-tb button:hover{background:rgba(255,255,255,.2)}',
 		'@media(pointer:coarse){#pe-tb button{width:34px;height:32px;font-size:17px}}',
 		'#pe-drop{position:absolute;z-index:99998;pointer-events:none}#pe-drop.line{background:#2563eb;border-radius:4px;box-shadow:0 0 0 2px #fff}#pe-drop.in{background:rgba(37,99,235,.12);outline:2px dashed #2563eb}',
-		'#pe-tb[hidden],#pe-drop[hidden]{display:none}'
+		'#pe-tb[hidden],#pe-drop[hidden]{display:none}',
+		'[data-ple-editing] [data-fx-in]:not(.pe-play){opacity:1!important;transform:none!important;filter:none!important;clip-path:none!important}',
+		'[data-ple-editing] [data-fx-in]:not(.pe-play) .fx-ch{opacity:1!important;transform:none!important}'
 	].join('\n');
 
 	global.PLEEditor = Editor;

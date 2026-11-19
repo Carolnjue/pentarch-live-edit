@@ -395,6 +395,13 @@
 			add(d, 'background-size', 'cover'); add(d, 'background-position', 'center');
 		}
 		if (t !== 'button' && t !== 'navbar') add(d, 'background-color', s.bg);
+		if (s.grad1 && s.grad2 && !s.bgImg) add(d, 'background-image', 'linear-gradient(' + (s.gangle || 135) + 'deg,' + s.grad1 + ',' + s.grad2 + ')');
+		if (s.glass) { d.push('background-color:rgba(255,255,255,.14)'); d.push('-webkit-backdrop-filter:blur(14px) saturate(1.3)'); d.push('backdrop-filter:blur(14px) saturate(1.3)'); d.push('border:1px solid rgba(255,255,255,.25)'); }
+		if (s.gradText && s.g1 && s.g2) { d.push('background-image:linear-gradient(90deg,' + s.g1 + ',' + s.g2 + ')'); d.push('-webkit-background-clip:text'); d.push('background-clip:text'); d.push('color:transparent'); d.push('-webkit-text-fill-color:transparent'); }
+		add(d, 'opacity', s.op); add(d, 'z-index', s.z);
+		if (s.pos) { add(d, 'position', s.pos); add(d, 'top', px(s.top)); add(d, 'left', px(s.left)); add(d, 'right', px(s.right)); add(d, 'bottom', px(s.bottom)); }
+		add(d, 'width', px(s.w)); add(d, 'max-width', px(s.mw)); if (s.mw) add(d, 'margin-left', 'auto'), add(d, 'margin-right', 'auto');
+		if (s.flex) { add(d, 'display', s.flex); add(d, 'flex-direction', s.fdir); add(d, 'flex-wrap', s.fwrap); add(d, 'justify-content', s.jc); add(d, 'align-items', s.ai); add(d, 'gap', px(s.fgap)); if (s.flex === 'grid') add(d, 'grid-template-columns', s.gcols ? 'repeat(' + s.gcols + ',minmax(0,1fr))' : null); }
 		if (t !== 'button' && t !== 'navbar') add(d, 'color', s.color);
 		add(d, 'padding-top', px(s.pt)); add(d, 'padding-bottom', px(s.pb));
 		if (s.px !== undefined && s.px !== '') { add(d, 'padding-left', px(s.px)); add(d, 'padding-right', px(s.px)); }
@@ -473,6 +480,36 @@
 		'@media(max-width:767px){.ple-stack-mobile,.ple-stack-tablet{grid-template-columns:1fr!important}}'
 	].join('\n');
 
+	/* Motion settings become data-fx-* attributes that ple-runtime.js reads. */
+	var FX_KEYS = ['in', 'dur', 'delay', 'once', 'text', 'stagger', 'hover', 'loop', 'scroll', 'speed', 'devices', 'sticky', 'offset', 'hide', 'sd'];
+	var fxAttrs = function (n) {
+		var fx = (n.props && n.props.fx) || {}, out = '';
+		FX_KEYS.forEach(function (k) { var v = fx[k]; if (v !== undefined && v !== null && v !== '') out += ' data-fx-' + k + '="' + escAttr(v) + '"'; });
+		return out;
+	};
+	var DIVIDERS = {
+		wave: 'M0 40 C 240 100 480 -20 720 40 S 1200 100 1440 40 V 0 H 0 Z',
+		curve: 'M0 0 H1440 V20 Q720 120 0 20 Z',
+		tilt: 'M0 0 H1440 V0 L0 80 Z',
+		triangle: 'M0 0 H1440 L720 80 Z',
+		zigzag: 'M0 0 H1440 V30 L1380 60 L1320 30 L1260 60 L1200 30 L1140 60 L1080 30 L1020 60 L960 30 L900 60 L840 30 L780 60 L720 30 L660 60 L600 30 L540 60 L480 30 L420 60 L360 30 L300 60 L240 30 L180 60 L120 30 L60 60 L0 30 Z',
+		clouds: 'M0 0 H1440 V40 C1380 70 1320 30 1260 50 C1200 80 1140 30 1080 50 C1020 80 960 30 900 50 C840 80 780 30 720 50 C660 80 600 30 540 50 C480 80 420 30 360 50 C300 80 240 30 180 50 C120 80 60 30 0 50 Z'
+	};
+	var hasExtras = function (n) { var p = n.props || {}; return !!(p.divTop || p.divBot || p.bgVideo || p.particles); };
+	var extrasHtml = function (n, editing) {
+		var p = n.props || {}, h = '';
+		if (p.bgVideo) {
+			var u = String(p.bgVideo), m, inner;
+			if ((m = u.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/))) inner = '<iframe src="https://www.youtube-nocookie.com/embed/' + m[1] + '?autoplay=1&amp;mute=1&amp;loop=1&amp;playlist=' + m[1] + '&amp;controls=0&amp;showinfo=0&amp;modestbranding=1" allow="autoplay" tabindex="-1" title="Background video"></iframe>';
+			else inner = '<video src="' + escAttr(safeUrl(u)) + '" autoplay muted loop playsinline></video>';
+			h += '<div class="pl-bgvideo" data-ple-auto aria-hidden="true">' + (editing ? '' : inner) + '</div>';
+		}
+		if (p.particles) h += '<canvas data-particles="' + escAttr(p.particles) + '" data-ple-auto aria-hidden="true"></canvas>';
+		var dv = function (shape, where) { var d = DIVIDERS[shape]; return d ? '<div class="pl-divider pl-divider-' + where + '" data-ple-auto aria-hidden="true" style="--dh:' + (+p.divH || 70) + 'px"><svg viewBox="0 0 1440 100" preserveAspectRatio="none"><path d="' + d + '" fill="' + escAttr(p.divColor || '#ffffff') + '"/></svg></div>' : ''; };
+		if (p.divTop) h += dv(p.divTop, 'top');
+		if (p.divBot) h += dv(p.divBot, 'bottom');
+		return h;
+	};
 	var selOf = function (n) { return n.type === 'el' ? '[data-pid="' + n.id + '"]' : '#ple-' + n.id; };
 	var escText = function (t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\u00a0/g, '&nbsp;'); };
 	var escAttr = function (t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); };
@@ -485,14 +522,22 @@
 		var tag = el.tagName.toLowerCase();
 		if (el.hasAttribute('data-ple-tree')) { try { return JSON.parse(el.getAttribute('data-ple-tree')); } catch (e) { } }
 		if (tag === 'style' && /\bple-gen\b/.test(el.className || '')) return null;
+		if (el.hasAttribute('data-ple-auto')) return null;
 		var attrs = {}, id = el.getAttribute('data-pid') || uid(), style = {};
-		[].slice.call(el.attributes).forEach(function (at) { if (at.name !== 'data-pid' && at.name !== 'data-ple-style' && at.name !== 'data-ple') attrs[at.name] = at.value; });
+		var fx = {}, xtra = null;
+		[].slice.call(el.attributes).forEach(function (at) {
+			if (at.name.indexOf('data-fx-') === 0 && FX_KEYS.indexOf(at.name.slice(8)) > -1) { fx[at.name.slice(8)] = at.value; return; }
+			if (at.name === 'data-ple-x') { try { xtra = JSON.parse(at.value); } catch (e) { } return; }
+			if (at.name !== 'data-pid' && at.name !== 'data-ple-style' && at.name !== 'data-ple' && at.name !== 'data-ple-bg') attrs[at.name] = at.value;
+		});
 		if (el.hasAttribute('data-ple-style')) { try { style = JSON.parse(el.getAttribute('data-ple-style')) || {}; } catch (e) { } }
-		var kids = [].slice.call(el.childNodes);
+		var kids = [].slice.call(el.childNodes).filter(function (k) { return !(k.nodeType === 1 && k.hasAttribute('data-ple-auto')); });
 		var hasBlockChild = kids.some(function (k) { return k.nodeType === 1 && !INLINE.test(k.tagName); });
 		var hasContent = kids.some(function (k) { return (k.nodeType === 3 && k.data.trim()) || k.nodeType === 1; });
 		var leaf = ALWAYS_LEAF.test(tag) || VOID.test(tag) || (hasContent && !hasBlockChild && (TEXTY.test(tag) || kids.some(function (k) { return k.nodeType === 3 && k.data.trim(); })));
 		var n = { id: id, type: 'el', props: { tag: tag, attrs: attrs }, style: style, children: [] };
+		if (Object.keys(fx).length) n.props.fx = fx;
+		if (xtra) Object.keys(xtra).forEach(function (k) { if (xtra[k]) n.props[k] = xtra[k]; });
 		if (leaf) { n.props.leaf = 1; n.props.html = (tag === 'template') ? el.innerHTML : el.innerHTML; }
 		else n.children = parseNodes(el);
 		return n;
@@ -551,7 +596,7 @@
 			if (r.inner.length) arr.push(sel + ' .ple-btn{' + r.inner.join(';') + '}');
 			r.extra.forEach(function (e) { arr.push(sel + ' ' + e[0] + '{' + e[1] + '}'); });
 		};
-		var attrs = function (n) { return ' id="ple-' + n.id + '"' + (ctx.editing ? ' data-ple="' + n.id + '"' : ''); };
+		var attrs = function (n) { return ' id="ple-' + n.id + '"' + fxAttrs(n) + (hasExtras(n) ? ' data-ple-bg' : '') + (ctx.editing ? ' data-ple="' + n.id + '"' : ''); };
 		var native = !!pp.native, hasWidgets = false;
 		var html = function (n, parent) {
 			var s = n.style || {};
@@ -571,12 +616,12 @@
 				case 'section':
 					var tag = /^(section|header|footer|main|div)$/.test(n.props.tag) ? n.props.tag : 'section';
 					var id = n.props.anchor ? ' id="' + esc(n.props.anchor) + '"' : '';
-					return '<' + tag + ' class="ple-section' + cls + '"' + attrs(n) + '>' + (id ? '<span' + id + ' style="position:absolute;top:-70px"></span>' : '') + '<div class="ple-wrap ple-wrap-' + esc(n.props.width || 'boxed') + '">' + (kids || (ctx.editing ? '<div class="ple-empty">Empty section</div>' : '')) + '</div></' + tag + '>';
+					return '<' + tag + ' class="ple-section' + cls + '"' + attrs(n) + '>' + (id ? '<span' + id + ' style="position:absolute;top:-70px"></span>' : '') + extrasHtml(n, ctx.editing) + '<div class="ple-wrap ple-wrap-' + esc(n.props.width || 'boxed') + '">' + (kids || (ctx.editing ? '<div class="ple-empty">Empty section</div>' : '')) + '</div></' + tag + '>';
 				case 'row':
 					var cols = (n.children || []).map(function (c) { return (+c.props.w || 1) + 'fr'; }).join(' ') || '1fr';
 					return '<div class="ple-row ple-stack-' + esc(n.props.stack || 'mobile') + cls + '"' + attrs(n) + ' style="grid-template-columns:' + cols + '">' + kids + '</div>';
 				case 'column':
-					return '<div class="ple-column' + cls + '"' + attrs(n) + '>' + (kids || (ctx.editing ? '<div class="ple-empty" data-drop="' + n.id + '">+ Add a widget</div>' : '')) + '</div>';
+					return '<div class="ple-column' + cls + '"' + attrs(n) + '>' + extrasHtml(n, ctx.editing) + (kids || (ctx.editing ? '<div class="ple-empty" data-drop="' + n.id + '">+ Add a widget</div>' : '')) + '</div>';
 				default:
 					var w = W[n.type];
 					var hx = n.type === 'heading' ? ' ple-hx-' + (/^(h[1-6]|p)$/.test(n.props.tag) ? n.props.tag : 'h2') : '';
@@ -604,9 +649,12 @@
 				a += ' ' + k + (at[k] === '' && /^(hidden|async|defer|disabled|checked|selected|required|readonly|multiple|autoplay|muted|loop|controls|playsinline|allowfullscreen|open|novalidate)$/i.test(k) ? '' : '="' + escAttr(at[k]) + '"');
 			});
 			if (styled) a += ' data-pid="' + n.id + '" data-ple-style="' + escAttr(JSON.stringify(s)) + '"';
+			a += fxAttrs(n);
+			var ex = !p.leaf && hasExtras(n);
+			if (ex) a += ' data-ple-bg data-ple-x="' + escAttr(JSON.stringify({ divTop: p.divTop, divBot: p.divBot, divColor: p.divColor, divH: p.divH, bgVideo: p.bgVideo, particles: p.particles })) + '"';
 			if (ctx.editing) a += ' data-ple="' + n.id + '"';
 			if (VOID.test(tag)) return '<' + tag + a + '>';
-			var inner = p.leaf ? (ctx.editing && tag === 'script' ? p.html : (p.html || '')) : kids();
+			var inner = p.leaf ? (ctx.editing && tag === 'script' ? p.html : (p.html || '')) : (ex ? extrasHtml(n, ctx.editing) : '') + kids();
 			return '<' + tag + a + '>' + inner + '</' + tag + '>';
 		};
 		var body = (tree.children || []).map(function (c) { return html(c, tree); }).join('');
@@ -630,7 +678,8 @@
 	};
 	var fullDoc = function (tree, title) {
 		var r = render(tree);
-		return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>' + esc(title || 'My page') + '</title>\n<style>\nbody{margin:0}\n' + r.css + '\n</style>\n</head>\n<body>\n' + pretty(r.html) + '\n</body>\n</html>';
+		var rt = global.PLECore && global.PLECore.RUNTIME;
+		return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>' + esc(title || 'My page') + '</title>\n' + (rt ? '<link rel="stylesheet" href="' + esc(rt.css) + '">\n' : '') + '<style>\nbody{margin:0}\n' + r.css + '\n</style>\n</head>\n<body>\n' + pretty(r.html) + '\n' + (rt ? '<script src="' + esc(rt.js) + '"></script>\n' : '') + '</body>\n</html>';
 	};
 	/* Light HTML formatter so students can read the generated code. */
 	var pretty = function (html) {
@@ -653,7 +702,7 @@
 		W: W, ICONS: ICONS, icon: icon, esc: esc, h: h, uid: uid, clone: clone, inert: inert, safeUrl: safeUrl, placeholder: placeholder,
 		node: node, col: col, row: row, section: section, emptyPage: emptyPage, starterPage: starterPage,
 		walk: walk, find: find, reId: reId, accepts: accepts, isContainer: isContainer, isLeafEl: isLeafEl, NATIVE: NATIVE, VOID: VOID,
-		parseHTML: parseHTML, parseNative: parseNative, serializeNative: serializeNative, selOf: selOf,
+		parseHTML: parseHTML, parseNative: parseNative, serializeNative: serializeNative, selOf: selOf, def: def, DIVIDERS: DIVIDERS, FX_KEYS: FX_KEYS,
 		T: T, TEMPLATES: TEMPLATES, STYLE_BOX: STYLE_BOX, STYLE_TEXT: STYLE_TEXT,
 		render: render, fullDoc: fullDoc, pretty: pretty, BASE_CSS: BASE_CSS
 	};

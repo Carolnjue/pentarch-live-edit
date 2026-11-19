@@ -34,6 +34,7 @@
 			exitUrl: cfg.exit,
 			exitLabel: 'Dashboard',
 			pageTemplate: tpl || '',
+			runtime: cfg.runtime,
 			sideNote: cfg.status !== 'publish' ? 'This page is a <b>' + cfg.status + '</b>. Use <b>Save</b> to keep working, or <b>Publish</b> when it is ready.' : '',
 			pageFields: native ? [] : [{ k: 'layout', l: 'Page layout', t: 'select', o: [['theme', 'Use my theme header and footer'], ['canvas', 'Blank canvas (only what I build)']], get: function () { return layout; }, set: function (v) { layout = v; } }],
 			pickImage: function (done) {

@@ -632,6 +632,7 @@
 			},
 			storeKey: 'ple:draft:' + pr.id,
 			sideNote: lesson ? '<b>Lesson task:</b> ' + lesson.task + '<br><button type="button" class="st-inline-b" onclick="document.querySelector(\'.st-taskb\').click()">See checklist</button>' : '',
+			runtime: S.runtime,
 			upload: function (file) {
 				var fd = new FormData(); fd.append('file', file);
 				return api('upload', { method: 'POST', form: fd }).then(function (r) { return r.url; });

@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
 
 final class PLE2 {
 
-	const VERSION  = '2.1.2';
+	const VERSION  = '2.2.0';
 	const NS       = 'ple/v2';
 	const PROJECT  = 'ple_project';
 	const KLASS    = 'ple_class';
@@ -46,6 +46,7 @@ final class PLE2 {
 		add_filter( 'the_content', array( __CLASS__, 'canvas_content' ), 99999 );
 		add_action( 'template_redirect', array( __CLASS__, 'canvas_mode' ), 0 );
 		add_action( 'wp_head', array( __CLASS__, 'page_css' ), 20 );
+		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'front_assets' ), 20 );
 		add_filter( 'template_include', array( __CLASS__, 'canvas_template' ), 99 );
 		add_filter( 'display_post_states', array( __CLASS__, 'post_state' ), 10, 2 );
 		add_action( 'edit_form_after_title', array( __CLASS__, 'edit_screen_button' ) );
@@ -78,6 +79,17 @@ final class PLE2 {
 		register_post_type( self::PROJECT, array_merge( $hidden, array( 'labels' => array( 'name' => __( 'Studio projects', 'pentarch-live-edit' ), 'singular_name' => __( 'Studio project', 'pentarch-live-edit' ), 'menu_name' => __( 'Studio projects', 'pentarch-live-edit' ) ) ) ) );
 		register_post_type( self::KLASS, array_merge( $hidden, array( 'labels' => array( 'name' => __( 'Studio classes', 'pentarch-live-edit' ), 'singular_name' => __( 'Studio class', 'pentarch-live-edit' ), 'menu_name' => __( 'Studio classes', 'pentarch-live-edit' ) ) ) ) );
 		register_post_type( self::SUB, array_merge( $hidden, array( 'show_in_menu' => false, 'labels' => array( 'name' => __( 'Submissions', 'pentarch-live-edit' ) ) ) ) );
+		register_post_type( 'ple_entry', array_merge( $hidden, array( 'supports' => array( 'title' ), 'labels' => array( 'name' => __( 'Form entries', 'pentarch-live-edit' ), 'singular_name' => __( 'Form entry', 'pentarch-live-edit' ), 'menu_name' => __( 'Form entries', 'pentarch-live-edit' ) ) ) ) );
+		add_action( 'add_meta_boxes_ple_entry', function () {
+			add_meta_box( 'ple_entry_fields', __( 'Answers', 'pentarch-live-edit' ), function ( $post ) {
+				$f = json_decode( (string) get_post_meta( $post->ID, '_fields', true ), true );
+				echo '<table class="widefat striped"><tbody>';
+				foreach ( (array) $f as $k => $v ) {
+					echo '<tr><th style="width:30%">' . esc_html( $k ) . '</th><td>' . nl2br( esc_html( $v ) ) . '</td></tr>';
+				}
+				echo '<tr><th>' . esc_html__( 'Page', 'pentarch-live-edit' ) . '</th><td><a href="' . esc_url( get_post_meta( $post->ID, '_page', true ) ) . '" target="_blank">' . esc_html( get_post_meta( $post->ID, '_page', true ) ) . '</a></td></tr></tbody></table>';
+			}, 'ple_entry', 'normal', 'high' );
+		} );
 
 		if ( get_option( 'ple2_roles' ) !== self::VERSION ) {
 			add_role( 'ple_student', __( 'PLE Student', 'pentarch-live-edit' ), array( 'read' => true ) );
@@ -99,6 +111,7 @@ final class PLE2 {
 				'color'        => '#2563eb',
 				'logo'         => '',
 				'support'      => '',
+				'form_email'   => '',
 			)
 		);
 	}
@@ -192,7 +205,8 @@ final class PLE2 {
 		wp_enqueue_media( array( 'post' => $id ) );
 		wp_enqueue_style( 'ple-editor', self::asset( 'ple-editor.css' ), array(), null );
 		wp_enqueue_script( 'ple-core', self::asset( 'ple-core.js' ), array(), null, true );
-		wp_enqueue_script( 'ple-editor', self::asset( 'ple-editor.js' ), array( 'ple-core' ), null, true );
+		wp_enqueue_script( 'ple-widgets', self::asset( 'ple-widgets.js' ), array( 'ple-core' ), null, true );
+		wp_enqueue_script( 'ple-editor', self::asset( 'ple-editor.js' ), array( 'ple-widgets' ), null, true );
 		wp_enqueue_script( 'ple-builder', self::asset( 'ple-builder.js' ), array( 'ple-editor', 'media-editor' ), null, true );
 		wp_localize_script(
 			'ple-builder',
@@ -210,6 +224,7 @@ final class PLE2 {
 				'exit'    => admin_url( 'page' === $post->post_type ? 'edit.php?post_type=page' : 'edit.php' ),
 				'status'  => $post->post_status,
 				'canCode' => current_user_can( 'unfiltered_html' ),
+				'runtime' => self::runtime_urls(),
 			)
 		);
 		nocache_headers();
@@ -341,6 +356,59 @@ final class PLE2 {
 		return '<!--PLE-ROOT-->';
 	}
 
+	/* Motion effects and interactive widgets on the live site. */
+	public static function front_assets() {
+		wp_enqueue_style( 'ple-runtime', self::asset( 'ple-runtime.css' ), array(), null );
+		wp_enqueue_script( 'ple-runtime', self::asset( 'ple-runtime.js' ), array(), null, true );
+		wp_add_inline_script( 'ple-runtime', 'window.PLE_REST=' . wp_json_encode( esc_url_raw( rest_url( self::NS . '/' ) ) ) . ';', 'before' );
+	}
+
+	public static function runtime_urls() {
+		return array( 'css' => self::asset( 'ple-runtime.css' ), 'js' => self::asset( 'ple-runtime.js' ) );
+	}
+
+	/* Form widget: keep every entry in WordPress and email it. */
+	public static function rest_form( $req ) {
+		$t = self::throttle( 'form', 10 );
+		if ( is_wp_error( $t ) ) {
+			return $t;
+		}
+		if ( '' !== (string) $req['hp'] ) {
+			return array( 'ok' => true );
+		}
+		$fields = $req->get_param( 'fields' );
+		if ( ! is_array( $fields ) || ! $fields ) {
+			return new WP_Error( 'ple_empty', __( 'Please fill in the form.', 'pentarch-live-edit' ), array( 'status' => 400 ) );
+		}
+		$clean = array();
+		foreach ( array_slice( $fields, 0, 30, true ) as $k => $v ) {
+			$clean[ sanitize_text_field( (string) $k ) ] = sanitize_textarea_field( substr( (string) $v, 0, 5000 ) );
+		}
+		$form  = sanitize_text_field( (string) $req['form'] ) ? sanitize_text_field( (string) $req['form'] ) : __( 'Website form', 'pentarch-live-edit' );
+		$page  = esc_url_raw( (string) $req['page'] );
+		$first = reset( $clean );
+		$id    = wp_insert_post( array( 'post_type' => 'ple_entry', 'post_status' => 'private', 'post_title' => $form . ': ' . wp_trim_words( (string) $first, 8 ) ) );
+		if ( $id && ! is_wp_error( $id ) ) {
+			update_post_meta( $id, '_fields', wp_slash( wp_json_encode( $clean ) ) );
+			update_post_meta( $id, '_page', $page );
+		}
+		$to   = self::settings()['form_email'] ? self::settings()['form_email'] : get_option( 'admin_email' );
+		$body = '';
+		foreach ( $clean as $k => $v ) {
+			$body .= $k . ': ' . $v . "\n";
+		}
+		$body .= "\n" . __( 'Sent from', 'pentarch-live-edit' ) . ' ' . $page;
+		$reply = array();
+		foreach ( $clean as $v ) {
+			if ( is_email( $v ) ) {
+				$reply[] = 'Reply-To: ' . $v;
+				break;
+			}
+		}
+		wp_mail( $to, sprintf( '[%s] %s', get_bloginfo( 'name' ), $form ), $body, $reply );
+		return array( 'ok' => true );
+	}
+
 	/* ===================================================================
 	 * REST
 	 * ================================================================= */
@@ -352,6 +420,7 @@ final class PLE2 {
 		) );
 
 		$open = '__return_true';
+		register_rest_route( self::NS, '/form', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'rest_form' ), 'permission_callback' => '__return_true' ) );
 		$user = array( __CLASS__, 'logged_in' );
 		$teach = array( __CLASS__, 'is_teacher_perm' );
 		$routes = array(
@@ -419,13 +488,7 @@ final class PLE2 {
 				foreach ( $n[ $k ] as $pk => $pv ) {
 					$pk = preg_replace( '/[^a-zA-Z0-9_]/', '', (string) $pk );
 					if ( is_array( $pv ) ) {
-						$sub = array();
-						foreach ( $pv as $sk => $sv ) {
-							if ( is_scalar( $sv ) ) {
-								$sub[ preg_replace( '/[^a-zA-Z0-9_]/', '', (string) $sk ) ] = (string) $sv;
-							}
-						}
-						$out[ $k ][ $pk ] = $sub;
+						$out[ $k ][ $pk ] = self::clean_value( $pv, 0, $allow_code );
 					} elseif ( is_scalar( $pv ) ) {
 						$v = (string) $pv;
 						if ( ! $allow_code && in_array( $pk, array( 'code', 'html', 'customCss' ), true ) ) {
@@ -486,6 +549,23 @@ final class PLE2 {
 		}
 		clean_post_cache( $id );
 		return array( 'ok' => true, 'status' => get_post_status( $id ), 'view' => get_permalink( $id ) );
+	}
+
+	/* Nested settings such as slides, tabs and form fields. */
+	private static function clean_value( $v, $depth, $allow_code ) {
+		if ( $depth > 4 ) {
+			return array();
+		}
+		$out = array();
+		foreach ( array_slice( $v, 0, 300, true ) as $k => $x ) {
+			$k = is_int( $k ) ? $k : preg_replace( '/[^a-zA-Z0-9_]/', '', (string) $k );
+			if ( is_array( $x ) ) {
+				$out[ $k ] = self::clean_value( $x, $depth + 1, $allow_code );
+			} elseif ( is_scalar( $x ) ) {
+				$out[ $k ] = $allow_code ? (string) $x : wp_kses_post( (string) $x );
+			}
+		}
+		return $out;
 	}
 
 	public static function rest_page_get( $req ) {
@@ -1181,6 +1261,7 @@ final class PLE2 {
 			'progress' => $uid ? self::progress( $uid ) : new stdClass(),
 			'lostPass' => wp_lostpassword_url( self::studio_url() ),
 			'wpAdmin'  => $uid && current_user_can( 'edit_pages' ) ? admin_url( 'edit.php?post_type=page' ) : '',
+			'runtime'  => self::runtime_urls(),
 		);
 		?><!DOCTYPE html>
 <html lang="en-GB">
@@ -1202,6 +1283,7 @@ final class PLE2 {
 <noscript><p style="padding:24px;font-family:sans-serif">PLE Studio needs JavaScript switched on.</p></noscript>
 <script>window.PLE_STUDIO=<?php echo wp_json_encode( $cfg ); ?>;</script>
 <script src="<?php echo esc_url( self::asset( 'ple-core.js' ) ); ?>"></script>
+<script src="<?php echo esc_url( self::asset( 'ple-widgets.js' ) ); ?>"></script>
 <script src="<?php echo esc_url( self::asset( 'ple-editor.js' ) ); ?>"></script>
 <script src="<?php echo esc_url( self::asset( 'ple-lessons.js' ) ); ?>"></script>
 <script src="<?php echo esc_url( self::asset( 'ple-studio.js' ) ); ?>"></script>
@@ -1243,7 +1325,8 @@ final class PLE2 {
 			echo preg_replace( '/<\/body>/i', $badge . '</body>', $doc, 1 ); // phpcs:ignore
 			exit;
 		}
-		echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' . esc_html( $p->post_title ) . '</title><style>body{margin:0}' . $css . '</style></head><body>' . $html . ( $js ? '<script>' . $js . '</script>' : '' ) . $badge . '</body></html>'; // phpcs:ignore
+		$rt = self::runtime_urls();
+		echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' . esc_html( $p->post_title ) . '</title><link rel="stylesheet" href="' . esc_url( $rt['css'] ) . '"><style>body{margin:0}' . $css . '</style></head><body>' . $html . ( $js ? '<script>' . $js . '</script>' : '' ) . $badge . '<script src="' . esc_url( $rt['js'] ) . '"></script></body></html>'; // phpcs:ignore
 		exit;
 	}
 
@@ -1328,6 +1411,7 @@ final class PLE2 {
 					<tr><th><label for="ple-color"><?php esc_html_e( 'Brand colour', 'pentarch-live-edit' ); ?></label></th><td><input id="ple-color" type="color" name="color" value="<?php echo esc_attr( $s['color'] ); ?>"></td></tr>
 					<tr><th><?php esc_html_e( 'Student sign-up', 'pentarch-live-edit' ); ?></th><td><label><input type="checkbox" name="register" value="1" <?php checked( $s['register'] ); ?>> <?php esc_html_e( 'Anyone can create a free student account', 'pentarch-live-edit' ); ?></label></td></tr>
 					<tr><th><label for="ple-tc"><?php esc_html_e( 'Teacher sign-up code', 'pentarch-live-edit' ); ?></label></th><td><input id="ple-tc" name="teacher_code" value="<?php echo esc_attr( $s['teacher_code'] ); ?>" autocomplete="off"><p class="description"><?php esc_html_e( 'Trainers who enter this code when signing up become teachers. Leave empty to add teachers yourself under Users (role: PLE Teacher).', 'pentarch-live-edit' ); ?></p></td></tr>
+					<tr><th><label for="ple-fe"><?php esc_html_e( 'Send form entries to', 'pentarch-live-edit' ); ?></label></th><td><input id="ple-fe" class="regular-text" type="email" name="form_email" value="<?php echo esc_attr( $s['form_email'] ); ?>" placeholder="<?php echo esc_attr( get_option( 'admin_email' ) ); ?>"><p class="description"><?php esc_html_e( 'Every form entry is also saved under Live Edit > Form entries.', 'pentarch-live-edit' ); ?></p></td></tr>
 					<tr><th><label for="ple-sup"><?php esc_html_e( 'Help contact (WhatsApp or email)', 'pentarch-live-edit' ); ?></label></th><td><input id="ple-sup" class="regular-text" name="support" value="<?php echo esc_attr( $s['support'] ); ?>"></td></tr>
 				</table>
 				<?php submit_button(); ?>
@@ -1353,6 +1437,7 @@ final class PLE2 {
 				'register'     => empty( $in['register'] ) ? 0 : 1,
 				'teacher_code' => sanitize_text_field( $in['teacher_code'] ?? '' ),
 				'support'      => sanitize_text_field( $in['support'] ?? '' ),
+				'form_email'   => sanitize_email( $in['form_email'] ?? '' ),
 			)
 		);
 		wp_safe_redirect( admin_url( 'edit.php?post_type=ple_block&page=ple-studio&saved=1' ) );
