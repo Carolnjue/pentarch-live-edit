@@ -1172,7 +1172,7 @@
 	g.PLEAcademy = {
 		route: function (parts) {
 			document.querySelectorAll('.ag,.ag-cur,.ag-ring').forEach(function (e) { e.remove(); });
-			if (!X()) return false;
+			if (!X() || !LAB()) return false;
 			if (parts[0] === 'lab') {
 				if (!parts[1]) { viewLab(); return true; }
 				if (!parts[2]) { viewTopic(parts[1]); return true; }
@@ -1185,6 +1185,7 @@
 		},
 		/* Teachers can attach any Lab item to a class assignment. */
 		options: function () {
+			if (!LAB()) return [];
 			var out = [['lab-start', 'Get started tour', 'Design Lab'], ['lab-makeover', 'Template makeover', 'Design Lab']];
 			BRIEFS.forEach(function (b) { out.push(['brief-' + b.id, 'Client brief: ' + b.name, 'Design Lab']); });
 			topics().forEach(function (t) { t.designs.forEach(function (d) { out.push(['d-' + d.id, t.name + ': ' + d.name + (d.demo ? '' : ' (practice)'), 'Design Lab designs']); }); });
@@ -1192,6 +1193,7 @@
 		},
 		linkFor: function (v) {
 			v = String(v || '');
+			if (!LAB()) return null;
 			if (v === 'lab-start') return { href: '#/start', label: 'Get started tour' };
 			if (v === 'lab-makeover') return { href: '#/makeover/do', label: 'Template makeover' };
 			if (v.indexOf('brief-') === 0) { var b = BRIEFS.filter(function (x) { return 'brief-' + x.id === v; })[0]; return b ? { href: '#/brief/' + b.id, label: 'Client brief: ' + b.name } : null; }
@@ -1199,18 +1201,20 @@
 			return null;
 		},
 		summary: function () {
+			if (!LAB()) return { all: 0, built: 0, watched: 0, started: true, makeover: false };
 			var all = 0, built = 0, watched = 0;
 			topics().forEach(function (t) { t.designs.forEach(function (d) { all++; var e = stateOf(d); if (e.done || e.guided) built++; if (e.watched) watched++; }); });
 			return { all: all, built: built, watched: watched, started: !!(progress().start || {}).guided, makeover: !!(progress().makeover || {}).guided };
 		},
 		startCard: function () {
-			var s2 = this.summary(); if (s2.started) return null;
+			var s2 = this.summary(); if (s2.started || !LAB()) return null;
 			var c = h('a', { class: 'al-promo al-new', href: '#/start' });
 			c.innerHTML = '<span class="al-sci">' + icon('bolt', 22) + '</span><div><b>New here? Take the 5-minute tour</b><small>A guide walks you through the builder on a real website, one tap at a time.</small></div><span class="st-btn sm pri">Start the tour</span>';
 			return c;
 		},
 		card: function (lessonId) {
 			var s2 = this.summary();
+			if (!LAB()) return h('span');
 			var map = { 'pb-hero': 'hero', 'pb-structure': 'services', 'pb-mobile': 'hero', 'pb-layers': 'about' };
 			var tp = lessonId && map[lessonId] && topicById(map[lessonId]);
 			if (tp) {

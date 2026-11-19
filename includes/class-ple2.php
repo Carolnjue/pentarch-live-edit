@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
 
 final class PLE2 {
 
-	const VERSION  = '2.5.8';
+	const VERSION  = '2.5.9';
 	const NS       = 'ple/v2';
 	const PROJECT  = 'ple_project';
 	const KLASS    = 'ple_class';
