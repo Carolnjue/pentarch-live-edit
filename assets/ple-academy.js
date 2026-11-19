@@ -888,6 +888,7 @@
 			acts.appendChild(h('a', { class: 'st-btn sm pri', href: '#/lab/' + t.id + '/' + d.id + '/guided' }, icon('rows', 14) + ' Build with guide'));
 		} else {
 			acts.appendChild(h('a', { class: 'st-btn sm pri', href: '#/lab/' + t.id + '/' + d.id + '/practise' }, icon('bolt', 14) + ' Practise'));
+			if (e.done) acts.appendChild(h('a', { class: 'st-btn sm', href: '#/lab/' + t.id + '/' + d.id + '/watch', title: 'Unlocked because you built it' }, icon('video', 14) + ' Watch how we built it'));
 		}
 		b.appendChild(acts);
 		c.appendChild(b);
@@ -960,6 +961,7 @@
 		var x = X();
 		x.modal('Well done!', '<div class="st-cele"><div class="st-confetti" aria-hidden="true">' + new Array(18).join('<i></i>') + '</div>' + icon('award', 48) + '<p>Your <b>' + esc(d.name) + '</b> matches the design. Save it to reuse it in your websites.</p></div>', [
 			{ text: 'Save to My parts', cls: 'pri', on: function (c) { c(); savePart(t, d, ed.tree); } },
+			{ text: 'Watch how we built it', on: function (c) { c(); location.hash = '#/lab/' + t.id + '/' + d.id + '/watch'; } },
 			{ text: 'Next design', on: function (c) { c(); location.hash = nextHref; } }]);
 	}
 
