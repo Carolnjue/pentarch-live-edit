@@ -200,3 +200,4 @@ body:has(.st-modal) .ag-tip{display:none}
 .al-how b{font-size:14px}.al-how small{color:var(--mut);font-size:12.5px;line-height:1.4}
 .al-hown{position:absolute;top:10px;right:12px;font:800 22px/1 system-ui;color:#e2e8f0}
 .al-howi{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:#eef2ff;color:#4338ca;margin-bottom:4px}
+.pe-learn{display:flex;gap:8px;align-items:flex-start;margin:6px 0 10px;padding:10px 12px;border-radius:10px;background:#f5f3ff;color:#5b21b6;font-size:13px;text-decoration:none;line-height:1.4}.pe-learn svg{flex:none;margin-top:1px}.pe-learn:hover{background:#ede9fe}

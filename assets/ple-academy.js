@@ -1248,7 +1248,14 @@
 		EP.panelEdit = function (p) {
 			var r = origEdit.apply(this, arguments), self = this;
 			if (!g.PLEStudio || !this.o.storeKey || !this.sel) return r;
-			var hit = C.find(this.tree, this.sel); if (!hit || hit.node.type !== 'section') return r;
+			var hit = C.find(this.tree, this.sel); if (!hit) return r;
+			var TOPIC_OF = { heroslider: 'hero', typing: 'hero', navbar: 'header', megamenu: 'header', iconbox: 'services', card: 'services', flipbox: 'services', imagebox: 'about', journey: 'journey', timeline: 'journey', testimonials: 'testimonials', rating: 'testimonials', stats: 'stats', counter: 'stats', progress: 'stats', chart: 'stats', pricing: 'pricing', pricelist: 'pricing', ctabox: 'cta', countdown: 'cta', gallery: 'gallery', carousel: 'gallery', compare: 'gallery', accordion: 'faq', tabs: 'faq', form: 'contact', map: 'contact', booking: 'contact', mpesa: 'contact', team: 'team', logos: 'team', marquee: 'team' };
+			var tid = TOPIC_OF[hit.node.type], tp = tid && LAB() && topicById(tid);
+			if (tp && !(g.PLEAcademy.current && !g.PLEAcademy.current.dead)) {
+				var lk = h('a', { class: 'pe-learn', href: '#/lab/' + tp.id, onclick: function (e) { if (self.dirty && self.o.save) { e.preventDefault(); self.save(); setTimeout(function () { location.hash = '#/lab/' + tp.id; }, 700); } } }, icon('star', 14) + ' <span>Learn to design great <b>' + esc(tp.name.toLowerCase()) + '</b> in the Design Lab</span>');
+				var ef = p.querySelector('.pe-efoot'); if (ef) p.insertBefore(lk, ef); else p.appendChild(lk);
+			}
+			if (hit.node.type !== 'section') return r;
 			var foot = p.querySelector('.pe-efoot');
 			var b = h('button', { type: 'button', class: 'pe-wide', onclick: function () {
 				var name = prompt('Name this part (for example "Hero with photo"):', 'My section'); if (!name) return;
