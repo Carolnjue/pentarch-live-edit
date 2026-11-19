@@ -982,7 +982,8 @@
 		b.appendChild(h('div', { class: 'al-dt' }, '<b>' + esc(d.name) + '</b>' + (d.demo ? chip('Demo') : chip('Practice', 'pr')) + (e.done || e.guided ? chip(icon('check', 12) + ' Built' + (e.score ? ' ' + e.score + '%' : ''), 'ok') : (e.watched ? chip('Watched', 'w') : ''))));
 		var gstep = X().store.get('lab-step:lab-' + d.id + '-g') || 0;
 		if (gstep && !(e.done || e.guided)) b.querySelector('.al-dt').insertAdjacentHTML('beforeend', chip('In progress', 'w'));
-		b.appendChild(h('p', null, esc(d.note)));
+		var nst = recipe(tree, 0).length;
+		b.appendChild(h('p', null, esc(d.note) + ' <span class="al-meta">' + nst + ' steps &middot; about ' + Math.max(3, Math.round(nst * 0.45)) + ' min</span>'));
 		var acts = h('div', { class: 'al-da' });
 		if (d.demo) {
 			acts.appendChild(h('a', { class: 'st-btn sm', href: '#/lab/' + t.id + '/' + d.id + '/watch' }, icon('video', 14) + ' Watch'));

@@ -1,5 +1,5 @@
 === Pentarch Live Edit ===
-Stable tag: 2.7.8
+Stable tag: 2.7.9
 
 Live Edit 1.x (inline editing, Live Blocks, site-wide zones) plus:
 * PLE Builder: "Edit with PLE" on any page or post. Sections, rows, columns and widgets, a Layers panel, desktop/tablet/phone styles, a code view, the Media Library, blank-canvas layout.
