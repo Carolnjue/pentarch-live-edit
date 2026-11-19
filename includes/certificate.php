@@ -7,6 +7,13 @@
 
 defined( 'ABSPATH' ) || exit;
 $ple_verify = PLE2::studio_url( 'cert/' . $key );
+/* Design Lab achievement, shown when the learner has built at least ten section designs. */
+$ple_lab = 0;
+foreach ( PLE2::lab( $u->ID ) as $ple_k => $ple_e ) {
+	if ( ! preg_match( '/^(start|makeover|quiz-|brief-)/', (string) $ple_k ) && ( ! empty( $ple_e['done'] ) || ! empty( $ple_e['guided'] ) ) ) {
+		$ple_lab++;
+	}
+}
 ?><!DOCTYPE html>
 <html lang="en-GB">
 <head>
@@ -40,7 +47,7 @@ h1{font-size:clamp(24px,4.6vw,54px);margin:.35em 0 .2em;font-weight:400;letter-s
 	<h1>Certificate of Completion</h1>
 	<div class="lead">This certifies that</div>
 	<div><span class="name"><?php echo esc_html( $u->display_name ); ?></span></div>
-	<div class="what">has completed the <strong>Practical Web Design</strong> course on <?php echo esc_html( $s['name'] ); ?>, covering HTML, CSS, responsive layout, visual page building and publishing a website.</div>
+	<div class="what">has completed the <strong>Practical Web Design</strong> course on <?php echo esc_html( $s['name'] ); ?>, covering HTML, CSS, responsive layout, visual page building and publishing a website.<?php if ( $ple_lab >= 10 ) : ?> In the Design Lab they also built <strong><?php echo (int) $ple_lab; ?> professional section designs</strong>.<?php endif; ?></div>
 	<div class="foot">
 		<div><b><?php echo esc_html( $date ); ?></b>Date issued</div>
 		<div class="seal">WEB<br>DESIGN</div>
