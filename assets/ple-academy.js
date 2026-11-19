@@ -832,6 +832,7 @@
 				ed.showTab('add');
 				new Guide(ed, steps, 'watch', { title: d.name, onExit: function () { location.hash = back; }, onDone: function () { mark(d.id, { watched: 1 }); }, endButtons: [
 					{ text: 'Build it with the guide', cls: 'pri', on: function () { location.hash = '#/lab/' + t.id + '/' + d.id + '/guided'; } },
+					{ text: 'Preview it full screen', on: function (gd) { gd.ed.preview(); } },
 					{ text: 'Watch again', on: function (gd) { gd.destroy(); x.route(); } },
 					{ text: 'Back to ' + t.name, on: function () { location.hash = back; } }] });
 			} });
@@ -962,6 +963,7 @@
 				var steps = makeoverSteps(ed.tree);
 				new Guide(ed, steps, 'watch', { title: 'Template makeover', onExit: function () { location.hash = '#/lab'; }, onDone: function () { mark('makeover', { watched: 1 }); }, endButtons: [
 					{ text: 'Now do it yourself', cls: 'pri', on: function () { location.hash = '#/makeover/do'; } },
+					{ text: 'Preview the finished website', on: function (gd) { gd.ed.preview(); } },
 					{ text: 'Watch again', on: function (gd) { gd.destroy(); x.route(); } },
 					{ text: 'Back to the Lab', on: function () { location.hash = '#/lab'; } }] });
 			} });
