@@ -188,3 +188,6 @@ body:has(.st-modal) .ag-tip{display:none}
 .al-avoid{--tc:#e11d48;border-left-color:#e11d48}.al-avoid h3{color:#e11d48}.al-avoid ul{margin:0;padding-left:20px}.al-avoid li{margin:4px 0}
 
 .al-tipsrow{display:grid;grid-template-columns:1fr;gap:10px}@media (min-width:1000px){.al-tipsrow{grid-template-columns:1fr 1fr}}
+.al-quiz{margin-top:26px;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:4px 18px 18px}.al-quiz .st-h2{display:flex;align-items:center;gap:8px}.al-quiz .al-chip{margin-top:0}
+.al-quiz .st-q label.right{border-color:var(--ok);background:#dcfce7}.al-quiz .st-q label.wrong{border-color:var(--err);background:#fee2e2}
+.al-quiz .st-h2{margin-top:16px}

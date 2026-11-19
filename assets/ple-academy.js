@@ -888,12 +888,50 @@
 		};
 		sec('Watch, then build with a guide', 'Watch the demo to see every click. Then build it yourself with step-by-step checks.', demos);
 		sec('Practise on your own', 'No demo for these. Use what you learned, check your work, and ask for hints if you get stuck.', prac);
+		if (t.avoid && t.tips) p.appendChild(topicQuiz(t));
 		var all = topics(), ti = all.indexOf(t), nt = all[ti + 1], pt = all[ti - 1];
 		var nav = h('nav', { class: 'al-tnav' });
 		nav.appendChild(pt ? h('a', { class: 'st-btn ghost', href: '#/lab/' + pt.id }, '&larr; ' + esc(pt.name)) : h('a', { class: 'st-btn ghost', href: '#/lab' }, '&larr; Design Lab'));
 		nav.appendChild(nt ? h('a', { class: 'st-btn', href: '#/lab/' + nt.id }, esc(nt.name) + ' &rarr;') : h('a', { class: 'st-btn', href: '#/lab' }, 'Client briefs &rarr;'));
 		p.appendChild(nav);
 		x.shell('lab', p);
+	}
+	/* A quick check built from the topic's good practice and mistakes. */
+	function topicQuiz(t) {
+		var e = progress()['quiz-' + t.id] || {};
+		var qs = [
+			{ q: 'Which of these is good practice for ' + t.name.toLowerCase() + '?', o: [t.tips[0], t.avoid[0], t.avoid[1]], a: 0 },
+			{ q: 'Which of these should you avoid?', o: [t.tips[1], t.avoid[2], t.tips[2]], a: 1 }
+		];
+		var box = h('section', { class: 'al-quiz' });
+		box.appendChild(h('h2', { class: 'st-h2' }, 'Quick check' + (e.done ? ' ' + chip(icon('check', 12) + ' Passed', 'ok') : '')));
+		var ans = {};
+		qs.forEach(function (q, qi) {
+			var order = qi % 2 ? [2, 0, 1] : [1, 2, 0];
+			var fs = h('fieldset', { class: 'st-q' });
+			fs.appendChild(h('legend', null, (qi + 1) + '. ' + esc(q.q)));
+			order.forEach(function (oi) {
+				var id = 'aq' + t.id + qi + oi;
+				var lab = h('label', { for: id }, '<input type="radio" name="aq' + t.id + qi + '" id="' + id + '"><span>' + esc(q.o[oi]) + '</span>');
+				lab.querySelector('input').onchange = function () { ans[qi] = oi; fs.querySelectorAll('label').forEach(function (x) { x.classList.remove('right', 'wrong'); }); };
+				fs.appendChild(lab);
+			});
+			box.appendChild(fs);
+		});
+		var res = h('p', { class: 'st-qres', role: 'status' });
+		box.appendChild(res);
+		box.appendChild(h('button', { type: 'button', class: 'st-btn pri', onclick: function () {
+			var right = 0;
+			qs.forEach(function (q, qi) {
+				var fs = box.querySelectorAll('.st-q')[qi];
+				fs.querySelectorAll('label').forEach(function (lb) { var inp = lb.querySelector('input'); lb.classList.remove('right', 'wrong'); if (inp.checked) lb.classList.add(ans[qi] === q.a ? 'right' : 'wrong'); });
+				if (ans[qi] === q.a) right++;
+			});
+			res.className = 'st-qres ' + (right === qs.length ? 'ok' : 'no');
+			res.textContent = right === qs.length ? 'Both right. You know what makes a good one.' : right + ' of ' + qs.length + ' right. Read the two boxes at the top again.';
+			if (right === qs.length) mark('quiz-' + t.id, { done: 1, score: 100 });
+		} }, 'Check my answers'));
+		return box;
 	}
 	function designCard(t, d) {
 		var e = stateOf(d), tree = pageOf(d.build());
