@@ -527,7 +527,7 @@
 		var self = this;
 		this.ring.classList.remove('on'); this.cur.classList.remove('on'); this.tip.classList.remove('on');
 		try { var ed = this.ed; if (ed.isPhone()) ed.closeSheet(); ed.select(null); if (ed.device !== 'd') ed.setDevice('d'); if (ed.win) ed.win.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { }
-		this.el.innerHTML = '';
+		this.el.innerHTML = ''; this.el.classList.add('ag-fin');
 		this.head(this.mode === 'watch' ? 'Demo' : 'Guided');
 		this.el.appendChild(h('div', { class: 'ag-done' }, '<span>' + icon('check', 26) + '</span><h4>' + esc(this.mode === 'watch' ? 'That is how it is done.' : 'You built it!') + '</h4><p>' + esc(this.mode === 'watch' ? 'Now try it yourself. Doing it once makes it stick.' : 'Every step is done. Look at it on the phone view too.') + '</p>'));
 		var row = h('div', { class: 'ag-ctl col' });
