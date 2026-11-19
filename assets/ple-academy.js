@@ -269,6 +269,7 @@
 	};
 
 	/* ---------- timing */
+	GP.waitReal = function (ms) { var sp = this.speed; this.speed = 1; var p = this.wait(ms); this.speed = sp; return p; };
 	GP.wait = function (ms) {
 		var self = this, tok = this.token, left = ms / this.speed;
 		return new Promise(function (res, rej) {
@@ -326,7 +327,7 @@
 		var ed = this.ed; if (!node) return;
 		if (ed.sel === node.id) return;
 		var el = this.canvasEl(node);
-		if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); await this.wait(450); await this.point(el); await this.tap(); }
+		if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); await this.waitReal(450); await this.point(el); await this.tap(); }
 		ed.select(node.id);
 		await this.wait(250);
 	};
@@ -335,7 +336,7 @@
 		if (ed.tab === t && (!ed.isPhone() || ed.el.classList.contains('sheet'))) return;
 		var b = this.uiTab(t); if (b) { await this.point(b); await this.tap(); }
 		ed.showTab(t, ed.isPhone());
-		await this.wait(250);
+		await this.waitReal(ed.isPhone() ? 340 : 120);
 	};
 	GP.doDevice = async function (d) {
 		var ed = this.ed; if (ed.device === d) return;
@@ -373,7 +374,7 @@
 		var f = this.findField(info.l);
 		if (f) {
 			var dt = f.closest('details'); if (dt && !dt.open) { var sm = dt.querySelector('summary'); await this.point(sm); await this.tap(); dt.open = true; await this.wait(200); }
-			f.scrollIntoView({ block: 'center', behavior: 'smooth' }); await this.wait(350);
+			f.scrollIntoView({ block: 'center' }); await this.waitReal(60);
 			await this.point(f);
 			var v = op.v, ctl;
 			switch (info.t) {
@@ -381,7 +382,7 @@
 				case 'toggle': ctl = f.querySelector('input[type=checkbox]'); if (ctl) { await this.tap(); ctl.checked = !!v; ctl.dispatchEvent(new Event('change', { bubbles: true })); } break;
 				case 'color': ctl = f.querySelector('.pe-color input[type=text]'); if (ctl) { await this.tap(); await this.type(ctl, v); } break;
 				case 'num': ctl = f.querySelector('input[type=number]'); if (ctl) { await this.tap(); ctl.value = v; ctl.dispatchEvent(new Event('input', { bubbles: true })); } break;
-				case 'icon': ctl = f.querySelector('.pe-icons button[title="' + v + '"]'); if (ctl) { ctl.scrollIntoView({ block: 'nearest' }); await this.point(ctl); await this.tap(); ctl.click(); } break;
+				case 'icon': ctl = f.querySelector('.pe-icons button[title="' + v + '"]'); if (ctl) { ctl.scrollIntoView({ block: 'nearest' }); await this.waitReal(40); await this.point(ctl); await this.tap(); ctl.click(); } break;
 				case 'image': ctl = f.querySelector('input[type=url]'); if (ctl) { await this.tap(); ctl.value = v; ctl.dispatchEvent(new Event('input', { bubbles: true })); } break;
 				case 'text': case 'url': case 'textarea': case 'html': ctl = f.querySelector('textarea,input'); if (ctl) { await this.tap(); await this.type(ctl, v); } break;
 				default: ctl = null;
@@ -412,7 +413,7 @@
 			var isTpl = key.indexOf('tpl:') === 0;
 			[].forEach.call(tiles(), function (t) { if (!tile && t.textContent.trim() === name && t.classList.contains('pe-tpl') === isTpl) tile = t; });
 		}
-		if (tile) { tile.scrollIntoView({ block: 'center' }); await this.wait(150); await this.point(tile); await this.tap(); tile.click(); }
+		if (tile) { tile.scrollIntoView({ block: 'center' }); await this.waitReal(60); await this.point(tile); await this.tap(); tile.click(); }
 		else { ed.add(key); }
 		ed._addQ = '';
 		await this.wait(700);
