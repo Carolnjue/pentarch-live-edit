@@ -813,7 +813,9 @@
 				if (!c.members.length) { body.appendChild(h('div', { class: 'st-empty' }, 'No students yet. Share the class code above.')); return; }
 				var t = h('div', { class: 'st-table' });
 				c.members.sort(function (a, b) { return b.pct - a.pct; }).forEach(function (m) {
-					t.appendChild(h('div', { class: 'st-tr' }, '<div class="st-who"><b>' + esc(m.name) + '</b><small>' + esc(m.email) + '</small></div><div class="st-prog"><div class="st-bar"><i style="width:' + m.pct + '%"></i></div><small>' + m.done + '/' + LESSONS.length + ' lessons &middot; ' + (m.lab || 0) + ' designs built &middot; active ' + ago(m.last) + (m.cert ? ' &middot; <b>Certified</b>' : '') + '</small></div>'));
+					var tr = h('div', { class: 'st-tr' }, '<div class="st-who"><b>' + esc(m.name) + '</b><small>' + esc(m.email) + '</small></div><div class="st-prog"><div class="st-bar"><i style="width:' + m.pct + '%"></i></div><small>' + m.done + '/' + LESSONS.length + ' lessons &middot; ' + (m.lab || 0) + ' designs built &middot; active ' + ago(m.last) + (m.cert ? ' &middot; <b>Certified</b>' : '') + '</small></div>');
+					if (window.PLEAcademy) tr.querySelector('.st-prog small').appendChild(h('button', { type: 'button', class: 'st-linkb', onclick: function () { window.PLEAcademy.studentModal(m); } }, ' \u00b7 Design Lab details'));
+					t.appendChild(tr);
 					var rm = h('button', { type: 'button', class: 'st-x', title: 'Remove from class', 'aria-label': 'Remove ' + m.name, onclick: function () { if (confirm('Remove ' + m.name + ' from this class?')) api('classes/' + c.id + '/remove', { method: 'POST', body: { student: m.id } }).then(function () { viewClass(c.id, 'students'); }); } }, '&times;');
 					t.lastChild.appendChild(rm);
 				});

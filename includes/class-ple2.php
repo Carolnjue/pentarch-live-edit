@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
 
 final class PLE2 {
 
-	const VERSION  = '2.6.7';
+	const VERSION  = '2.6.8';
 	const NS       = 'ple/v2';
 	const PROJECT  = 'ple_project';
 	const KLASS    = 'ple_class';
@@ -1149,16 +1149,19 @@ final class PLE2 {
 						$last = max( $last, (int) $p[ $id ]['at'] );
 					}
 				}
-				$lab = 0;
+				$lab   = 0;
+				$items = array();
 				foreach ( self::lab( $m->ID ) as $lk => $le ) {
-					if ( 0 === strpos( (string) $lk, 'start' ) || 'makeover' === $lk ) {
+					$lk = (string) $lk;
+					if ( empty( $le['done'] ) && empty( $le['guided'] ) && empty( $le['watched'] ) ) {
 						continue;
 					}
-					if ( ! empty( $le['done'] ) || ! empty( $le['guided'] ) ) {
+					$items[ $lk ] = array( 'g' => empty( $le['guided'] ) ? 0 : 1, 'd' => empty( $le['done'] ) ? 0 : 1, 'w' => empty( $le['watched'] ) ? 0 : 1, 's' => isset( $le['score'] ) ? (int) $le['score'] : null );
+					if ( ! preg_match( '/^(start|makeover|quiz-|brief-)/', $lk ) && ( ! empty( $le['done'] ) || ! empty( $le['guided'] ) ) ) {
 						$lab++;
 					}
 				}
-				$out['members'][] = array( 'id' => $m->ID, 'name' => $m->display_name, 'email' => $m->user_email, 'done' => $done, 'pct' => round( 100 * $done / $total ), 'last' => $last, 'lab' => $lab, 'cert' => (bool) get_user_meta( $m->ID, '_ple_cert', true ) );
+				$out['members'][] = array( 'id' => $m->ID, 'name' => $m->display_name, 'email' => $m->user_email, 'done' => $done, 'pct' => round( 100 * $done / $total ), 'last' => $last, 'lab' => $lab, 'labItems' => (object) $items, 'cert' => (bool) get_user_meta( $m->ID, '_ple_cert', true ) );
 			}
 		}
 		return $out;

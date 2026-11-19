@@ -191,3 +191,5 @@ body:has(.st-modal) .ag-tip{display:none}
 .al-quiz{margin-top:26px;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:4px 18px 18px}.al-quiz .st-h2{display:flex;align-items:center;gap:8px}.al-quiz .al-chip{margin-top:0}
 .al-quiz .st-q label.right{border-color:var(--ok);background:#dcfce7}.al-quiz .st-q label.wrong{border-color:var(--err);background:#fee2e2}
 .al-quiz .st-h2{margin-top:16px}
+.al-stu h4{margin:14px 0 6px;font-size:14px}.al-stu h4 small{font-weight:600;color:var(--ok)}.al-stul{list-style:none;margin:0;padding:0;display:grid;gap:4px}.al-stul li{display:flex;justify-content:space-between;gap:10px;padding:7px 10px;border-radius:9px;background:var(--soft);font-size:14px}.al-stul b{color:#166534;font-size:13px}
+.st-linkb{border:0;background:none;padding:0;margin-left:4px;color:var(--brand);font:inherit;font-weight:600;cursor:pointer}

@@ -556,6 +556,7 @@
 					this.opI = k; this.drawWatch();
 					this.tip.innerHTML = st.ops[k].t === 'note' ? '' : opCaption(st.ops[k]);
 					await this.doOp(st.ops[k]);
+					if (whyFor(st.ops[k])) await this.wait(700);
 				}
 				this.tip.classList.remove('on');
 				this.opI = (st.ops || []).length; this.drawWatch();
@@ -1247,6 +1248,22 @@
 			if (parts[0] === 'brief') { runBrief(parts[1]); return true; }
 			if (parts[0] === 'makeover') { runMakeover(parts[1] === 'do' ? 'do' : 'watch'); return true; }
 			return false;
+		},
+		/* Teachers see what a student has done in the Lab. */
+		studentModal: function (m) {
+			var items = m.labItems || {}, box = h('div', { class: 'al-stu' });
+			var row = function (lbl, e) { return '<li><span>' + esc(lbl) + '</span><b>' + (e.d ? 'Built' + (e.s ? ' ' + e.s + '%' : '') : e.g ? 'Built with guide' : e.w ? 'Watched' : '') + '</b></li>'; };
+			var top = [['start', 'Get started tour'], ['makeover', 'Template makeover']].concat(BRIEFS.map(function (b) { return ['brief-' + b.id, 'Brief: ' + b.name]; }));
+			var html = '<ul class="al-stul">' + top.filter(function (x) { return items[x[0]]; }).map(function (x) { return row(x[1], items[x[0]]); }).join('') + '</ul>';
+			if (LAB()) topics().forEach(function (t) {
+				var ds = t.designs.filter(function (d) { return items[d.id]; });
+				var qz = items['quiz-' + t.id];
+				if (!ds.length && !qz) return;
+				html += '<h4>' + esc(t.name) + (qz ? ' <small>quiz passed</small>' : '') + '</h4><ul class="al-stul">' + ds.map(function (d) { return row(d.name, items[d.id]); }).join('') + '</ul>';
+			});
+			box.innerHTML = html.replace('<ul class="al-stul"></ul>', '') || '<p>Nothing in the Design Lab yet.</p>';
+			if (!Object.keys(items).length) box.innerHTML = '<p>Nothing in the Design Lab yet.</p>';
+			X().modal(m.name + ': Design Lab', box);
 		},
 		/* Teachers can attach any Lab item to a class assignment. */
 		options: function () {
