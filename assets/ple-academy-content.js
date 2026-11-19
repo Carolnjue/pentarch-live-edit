@@ -26,6 +26,7 @@
 			id: 'hero', name: 'Hero banners', icon: 'image', color: '#1d4ed8',
 			blurb: 'The first screen visitors see. It must say who you are and what to do next, in five seconds.',
 			tips: ['One clear headline that names the benefit, not just your name.', 'One main button. A second, quieter button is fine, never three.', 'Text must stay readable: use an overlay on photos and check it on a phone.'],
+			avoid: ['Long paragraphs in the hero: nobody reads them on a phone.', 'Text on a busy photo with no overlay.', 'Three or more buttons competing for attention.'],
 			designs: [
 				{ id: 'hero-photo', name: 'Centred photo hero', demo: 1, note: 'Full-width photo, dark overlay, centred text and an animated entrance.', build: function () {
 					return [S([R([K([
@@ -79,6 +80,7 @@
 			id: 'header', name: 'Headers and menus', icon: 'menu', color: '#0f766e',
 			blurb: 'The menu helps people find their way. Keep it short, clear and always within reach.',
 			tips: ['Five to seven links at most. Group the rest in a dropdown.', 'Put one call-to-action button on the right.', 'Make it stick to the top so it is always available.'],
+			avoid: ['Ten links in the menu: people give up looking.', 'A logo so big it pushes the page down.', 'A menu that disappears when people scroll on long pages.'],
 			designs: [
 				{ id: 'nav-classic', name: 'Clean white menu', demo: 1, note: 'Logo left, links in the middle, a button on the right. Sticks when you scroll.', build: function () {
 					return [S([R([K([N('navbar', { brand: 'Kilele Academy', links: 'Home|#\nCourses|#courses\nAbout|#about\nContact|#contact', cta: 'Apply now', ctaHref: '#apply' }, { shadow: '0 2px 8px rgba(0,0,0,.08)' }, { sticky: 'top' })])])], { pt: 0, pb: 0, px: 0 }, { tag: 'header', width: 'full' })];
@@ -101,6 +103,7 @@
 			id: 'about', name: 'About sections', icon: 'users', color: '#0d9488',
 			blurb: 'Tell your story so visitors trust the people behind the business.',
 			tips: ['Show real people or real work, not only words.', 'Lead with what you believe and who you help, then the facts.', 'Finish with a clear next step.'],
+			avoid: ['Starting with dates and history instead of what you do for people.', 'Stock photos that look nothing like your team.', 'No next step at the end.'],
 			designs: [
 				{ id: 'ab-split', name: 'Picture and story', demo: 1, note: 'A rounded photo beside your story, with a checklist and a button.', build: function () {
 					return [S([R([
@@ -121,6 +124,7 @@
 			id: 'team', name: 'Team and trust', icon: 'award', color: '#4f46e5',
 			blurb: 'Faces and logos make a business feel real and safe to choose.',
 			tips: ['Use the same photo shape and size for every person.', 'Name, role and one line each. Put details in a pop-up.', 'Show partner logos in a calm grey strip.'],
+			avoid: ['Photos of different shapes and sizes side by side.', 'Long biographies on the page instead of in a pop-up.', 'Logos in bright colours that fight with your brand.'],
 			designs: [
 				{ id: 'tm-cards', name: 'Team cards', demo: 1, note: 'Three team members with photos; tap a card for their full bio.', build: function () {
 					var m = function (src, n, r) { return K([N('team', { src: pic(src), name: n, role: r }, {}, { hover: 'lift' })]); };
@@ -138,6 +142,7 @@
 			id: 'services', name: 'Service cards', icon: 'card', color: '#7c3aed',
 			blurb: 'Show what you offer in a grid people can scan in seconds.',
 			tips: ['Three or four cards in a row on desktop, one per row on phones.', 'Every card: an icon or picture, a short title and one line of text.', 'Same height and style for every card. Add a hover effect so it feels alive.'],
+			avoid: ['Cards of different heights and styles in one row.', 'Vague titles like \u201cSolutions\u201d that say nothing.', 'Too many cards: nine items is a wall, not a choice.'],
 			designs: [
 				{ id: 'svc-icons', name: 'Icon cards with hover lift', demo: 1, note: 'Three soft cards with icons that rise when you point at them.', build: function () {
 					var card = function (ic, t, x, d) { return K([N('iconbox', { icon: ic, title: t, text: x }, { bg: '#ffffff', radius: 18, pt: 28, pb: 28, px: 24, shadow: '0 10px 30px rgba(0,0,0,.15)', ic: BRAND }, { 'in': 'fade-up', delay: d, hover: 'lift' })]); };
@@ -171,6 +176,7 @@
 			id: 'journey', name: 'Journeys and steps', icon: 'arrow', color: '#ea580c',
 			blurb: 'Show people exactly what happens next. Clear steps remove fear and bring more sign-ups.',
 			tips: ['Three to five steps. Each one starts with a verb: Apply, Learn, Graduate.', 'Number the steps or connect them with a line so the order is obvious.', 'End with the outcome people want.'],
+			avoid: ['Steps that are not in the order people experience them.', 'More than six steps: it looks like hard work.', 'Missing the final outcome people actually want.'],
 			designs: [
 				{ id: 'jr-steps', name: 'Journey steps', demo: 1, note: 'Four connected steps with icons.', build: function () {
 					return [S([R([K([kicker('HOW IT WORKS'), title('From sign-up to certificate', { mb: 30 }), N('journey', {}, {}, { 'in': 'fade-up' })])])])];
@@ -192,6 +198,7 @@
 			id: 'testimonials', name: 'Testimonials', icon: 'users', color: '#db2777',
 			blurb: 'Real words from real people are the strongest proof you can show.',
 			tips: ['Use full names, roles and photos when you can.', 'Short quotes work best: one or two sentences.', 'Put testimonials near buttons, where people decide.'],
+			avoid: ['Quotes with no names, which look made up.', 'Very long quotes that nobody finishes.', 'Hiding testimonials at the very bottom of the page.'],
 			designs: [
 				{ id: 'ts-slider', name: 'Testimonial slider', demo: 1, note: 'Quotes that slide by themselves, two at a time on desktop.', build: function () {
 					return [S([R([K([kicker('STUDENT STORIES'), title('What our graduates say', { mb: 24 }), N('testimonials')])])], { bg: SOFT })];
@@ -212,6 +219,7 @@
 			id: 'stats', name: 'Numbers and stats', icon: 'chart', color: '#0891b2',
 			blurb: 'Numbers build trust fast. Make them big, few and easy to understand.',
 			tips: ['Three or four numbers is enough.', 'Count up when they appear: movement draws the eye.', 'Use a contrasting band so the numbers stand out.'],
+			avoid: ['Too many numbers, so none of them stands out.', 'Numbers without a label explaining what they mean.', 'Low contrast: blue numbers on a dark blue background.'],
 			designs: [
 				{ id: 'st-band', name: 'Dark stats band', demo: 1, note: 'Four counting numbers on a dark band.', build: function () {
 					return [S([R([K([N('stats', {}, { color: '#ffffff' })])])], { bg: INK, color: '#ffffff', pt: 56, pb: 56 })];
@@ -233,6 +241,7 @@
 			id: 'pricing', name: 'Pricing', icon: 'cart', color: '#16a34a',
 			blurb: 'Clear prices make decisions easy. Highlight the plan you want most people to choose.',
 			tips: ['Three plans is the sweet spot. Highlight the middle one.', 'List what each plan includes in short lines.', 'Every plan gets its own button.'],
+			avoid: ['Hiding the price and making people ask.', 'Plans that look identical, so choosing is hard.', 'Missing buttons, so people cannot act on their choice.'],
 			designs: [
 				{ id: 'pr-three', name: 'Three plans, middle highlighted', demo: 1, note: 'Classic pricing tables with a "Most popular" badge.', build: function () {
 					return [S([R([K([title('Simple, fair prices', { mb: 24 })])]), R([K([N('pricing', { title: 'Starter', price: 'KSh 15,000' })]), K([N('pricing', { hot: '1', badge: 'Most popular' })]), K([N('pricing', { title: 'Organisations', price: 'Custom', period: 'quote' })])], { gap: 24 })], { bg: SOFT })];
@@ -249,6 +258,7 @@
 			id: 'cta', name: 'Calls to action', icon: 'bolt', color: '#e11d48',
 			blurb: 'A call to action tells people exactly what to do now. Make it impossible to miss.',
 			tips: ['One message and one button.', 'Use a colour that contrasts with the rest of the page.', 'Make the button say what happens: "Chat on WhatsApp", not "Click here".'],
+			avoid: ['A weak button label like \u201cSubmit\u201d or \u201cClick here\u201d.', 'A call to action that blends into the page.', 'Asking for too much at once.'],
 			designs: [
 				{ id: 'cta-box', name: 'Gradient call-to-action box', demo: 1, note: 'A rounded gradient box with a strong button.', build: function () {
 					return [S([R([K([N('ctabox', { title: 'Ready to start?', text: 'Talk to our admissions team today.', btn: 'Chat on WhatsApp' }, { c1: '#be123c', c2: '#7c3aed' }, { 'in': 'zoom-in' })])])])];
@@ -268,6 +278,7 @@
 			id: 'gallery', name: 'Galleries', icon: 'image', color: '#9333ea',
 			blurb: 'Pictures prove your work is real. Show them big, sharp and in order.',
 			tips: ['Use pictures of the same shape for a tidy grid.', 'Let people tap to see a picture full screen.', 'Six to nine pictures is plenty; link to more.'],
+			avoid: ['Blurry or very large pictures that slow the page.', 'Pictures of mixed shapes in an even grid.', 'No captions, so people do not know what they are looking at.'],
 			designs: [
 				{ id: 'gl-grid', name: 'Even grid with lightbox', demo: 1, note: 'Square pictures that open full screen.', build: function () {
 					var gl = N('gallery'); gl.props.items = ['team', 'office', 'salon', 'shop front', 'fresh food', 'farm produce'].map(function (p, i) { return { src: pic(p), cap: ['Graduation', 'Class time', 'Salon project', 'Client shop', 'Food brand', 'Farm brand'][i] }; });
@@ -290,6 +301,7 @@
 			id: 'faq', name: 'FAQs', icon: 'book', color: '#ca8a04',
 			blurb: 'Answer the questions people are afraid to ask. Every good answer removes a reason to leave.',
 			tips: ['Write questions the way customers ask them.', 'Keep answers to two or three sentences.', 'Open one answer at a time to keep the page tidy.'],
+			avoid: ['Answers that are longer than the page they sit on.', 'Questions written the way the business talks, not the customer.', 'All answers open at once, so the page becomes a wall of text.'],
 			designs: [
 				{ id: 'fq-simple', name: 'Simple FAQ', demo: 1, note: 'A narrow column of questions that open and close.', build: function () {
 					return [S([R([K([title('Frequently asked questions', { mb: 20 }), N('accordion')])])], {}, { width: 'narrow' })];
@@ -307,6 +319,7 @@
 			id: 'contact', name: 'Contact sections', icon: 'mail', color: '#2563eb',
 			blurb: 'Make it effortless to reach you: phone, WhatsApp, a form and a map.',
 			tips: ['Show the phone number as text people can tap.', 'Keep forms short: name, phone and a message.', 'Tell people how fast you reply.'],
+			avoid: ['Forms with ten fields: people give up.', 'A phone number as an image that cannot be tapped.', 'No promise about how fast you will reply.'],
 			designs: [
 				{ id: 'ct-form', name: 'Contact details and form card', demo: 1, note: 'Details on the left, a form in a white card on the right.', build: function () {
 					return [S([R([
@@ -329,6 +342,7 @@
 			id: 'footer', name: 'Footers', icon: 'rows', color: '#334155',
 			blurb: 'The footer catches people who scrolled to the end. Give them links, contacts and a last nudge.',
 			tips: ['Group links into short columns with headings.', 'Repeat your phone, email and social links.', 'Add the copyright line and keep it calm and dark.'],
+			avoid: ['Repeating the whole menu with no grouping.', 'Tiny grey text that nobody can read.', 'An old copyright year that makes the site look abandoned.'],
 			designs: [
 				{ id: 'ft-columns', name: 'Three-column dark footer', demo: 1, note: 'Brand, links and social in three columns, copyright below.', build: function () {
 					return [S([

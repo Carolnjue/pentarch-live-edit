@@ -185,3 +185,6 @@ body:has(.st-modal) .ag-tip{display:none}
 @media (max-width:900px){.ag.ag-bottom{top:auto;bottom:74px}.pe.sheet~.ag.ag-bottom,.ag.ag-compact.ag-bottom{top:56px;bottom:auto}}
 @media (min-width:901px){.ag.ag-left{right:auto;left:calc(min(320px,30vw) + 18px)}}
 .st-labwork{margin-top:22px}.st-labwork>summary{cursor:pointer;font-weight:700;color:var(--mut);padding:8px 0}.st-labwork .st-grid{margin-top:10px}
+.al-avoid{--tc:#e11d48;border-left-color:#e11d48}.al-avoid h3{color:#e11d48}.al-avoid ul{margin:0;padding-left:20px}.al-avoid li{margin:4px 0}
+
+.al-tipsrow{display:grid;grid-template-columns:1fr;gap:10px}@media (min-width:1000px){.al-tipsrow{grid-template-columns:1fr 1fr}}

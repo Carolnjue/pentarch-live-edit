@@ -874,7 +874,9 @@
 		var bn = t.designs.filter(function (d) { var e = stateOf(d); return e.done || e.guided; }).length;
 		p.appendChild(h('div', { class: 'al-tprog', style: '--tc:' + t.color }, '<span>' + bn + ' of ' + t.designs.length + ' built</span><i><b style="width:' + Math.round(100 * bn / t.designs.length) + '%"></b></i>'));
 		var tips = h('div', { class: 'al-tips', style: '--tc:' + t.color }, '<h3>' + icon('star', 16) + ' What makes a good one</h3><ol>' + t.tips.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>');
-		p.appendChild(tips);
+		var trow = h('div', { class: 'al-tipsrow' }); trow.appendChild(tips);
+		if (t.avoid) trow.appendChild(h('div', { class: 'al-tips al-avoid' }, '<h3>' + icon('shield', 16) + ' Avoid these</h3><ul>' + t.avoid.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>'));
+		p.appendChild(trow);
 		var demos = t.designs.filter(function (d) { return d.demo; }), prac = t.designs.filter(function (d) { return !d.demo; });
 		var sec = function (title, sub, list) {
 			if (!list.length) return;
