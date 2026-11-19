@@ -56,7 +56,22 @@
 		window.PLE_ED = ed;
 	});
 
+	/* Only send Live Blocks that really changed, so untouched blocks keep their exact code. */
+	var norm = function (h) {
+		var t = document.createElement('template'); t.innerHTML = h || '';
+		(function w(n) { [].slice.call(n.childNodes).forEach(function (c) { if (c.nodeType === 3 && !c.data.trim()) c.remove(); else if (c.nodeType === 1) w(c); }); })(t.content);
+		return t.innerHTML.replace(/\s+/g, ' ').replace(/> </g, '><').trim();
+	};
+	var original = {};
+	if (cfg.source && cfg.source.blocks) Object.keys(cfg.source.blocks).forEach(function (k) { var b = cfg.source.blocks[k]; original[b.id] = norm(b.content); });
 	function save(data, publish) {
+		if (data.native) {
+			Object.keys(data.native.blocks).forEach(function (id) {
+				var n = norm(data.native.blocks[id]);
+				if (original[id] !== undefined && original[id] === n) delete data.native.blocks[id];
+				else original[id] = n;
+			});
+		}
 		var body = data.native
 			? { native: data.native, title: data.title, publish: publish ? 1 : 0 }
 			: { tree: data.tree, html: data.html, css: data.css, title: data.title, layout: layout, publish: publish ? 1 : 0 };
