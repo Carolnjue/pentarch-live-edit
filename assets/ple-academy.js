@@ -840,8 +840,14 @@
 			var verb = { watch: 'Watch again', guided: 'Continue building', practise: 'Continue practising', brief: 'Continue the brief' }[last.mode] || 'Continue';
 			p.appendChild(h('a', { class: 'al-promo', href: last.href }, '<span class="al-sci">' + icon('arrow', 22) + '</span><div><b>Pick up where you left off</b><small>' + esc(last.name) + '</small></div><span class="st-btn sm pri">' + verb + '</span>'));
 		}
+		var how = h('ol', { class: 'al-how' });
+		[['video', 'Watch', 'See every click in the real editor, with the reasons.'], ['rows', 'Build with a guide', 'Do it yourself; each step ticks when it is right.'], ['bolt', 'Practise alone', 'Rebuild new designs from a target and check your score.'], ['star', 'Save and reuse', 'Keep your best parts and drop them into any website.']].forEach(function (x, i) {
+			how.appendChild(h('li', null, '<span class="al-hown">' + (i + 1) + '</span><span class="al-howi">' + icon(x[0], 18) + '</span><b>' + x[1] + '</b><small>' + x[2] + '</small>'));
+		});
 		p.appendChild(h('h2', { class: 'st-h2' }, 'Start here'));
 		p.appendChild(start);
+		p.appendChild(h('h2', { class: 'st-h2' }, 'How each design lesson works'));
+		p.appendChild(how);
 		var hd = h('div', { class: 'al-hrow' }, '<h2 class="st-h2">Design lessons</h2><span class="al-count">' + doneN + ' of ' + all + ' designs built</span>');
 		p.appendChild(hd);
 		var grid = h('div', { class: 'al-topics' });

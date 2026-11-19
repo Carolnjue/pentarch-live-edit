@@ -194,3 +194,9 @@ body:has(.st-modal) .ag-tip{display:none}
 .al-stu h4{margin:14px 0 6px;font-size:14px}.al-stu h4 small{font-weight:600;color:var(--ok)}.al-stul{list-style:none;margin:0;padding:0;display:grid;gap:4px}.al-stul li{display:flex;justify-content:space-between;gap:10px;padding:7px 10px;border-radius:9px;background:var(--soft);font-size:14px}.al-stul b{color:#166534;font-size:13px}
 .st-linkb{border:0;background:none;padding:0;margin-left:4px;color:var(--brand);font:inherit;font-weight:600;cursor:pointer}
 .ag-spd.on{border-color:#2563eb!important;color:#2563eb!important;background:#eff6ff!important}
+.al-how{list-style:none;margin:0 0 6px;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (min-width:900px){.al-how{grid-template-columns:repeat(4,1fr)}}
+.al-how li{position:relative;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 14px 14px 14px;display:flex;flex-direction:column;gap:3px}
+.al-how b{font-size:14px}.al-how small{color:var(--mut);font-size:12.5px;line-height:1.4}
+.al-hown{position:absolute;top:10px;right:12px;font:800 22px/1 system-ui;color:#e2e8f0}
+.al-howi{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:#eef2ff;color:#4338ca;margin-bottom:4px}
