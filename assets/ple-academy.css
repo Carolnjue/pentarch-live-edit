@@ -201,3 +201,16 @@ body:has(.st-modal) .ag-tip{display:none}
 .al-hown{position:absolute;top:10px;right:12px;font:800 22px/1 system-ui;color:#e2e8f0}
 .al-howi{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:#eef2ff;color:#4338ca;margin-bottom:4px}
 .pe-learn{display:flex;gap:8px;align-items:flex-start;margin:6px 0 10px;padding:10px 12px;border-radius:10px;background:#f5f3ff;color:#5b21b6;font-size:13px;text-decoration:none;line-height:1.4}.pe-learn svg{flex:none;margin-top:1px}.pe-learn:hover{background:#ede9fe}
+/* Light welcome screen */
+.st-welcome{background:linear-gradient(160deg,#f8fafc 0%,#eef2ff 55%,#fff7ed 100%)}
+.st-wh{color:#334155}
+.st-wh:before{background:radial-gradient(circle,rgba(37,99,235,.18),transparent 65%)}
+.st-wh:after{background:radial-gradient(circle,rgba(245,158,11,.16),transparent 65%)}
+.st-wh h1{color:#0f172a}
+.st-wh h1 span{background:linear-gradient(90deg,#2563eb,#d97706);-webkit-background-clip:text;background-clip:text;color:transparent}
+.st-wh p{color:#475569}
+.st-wh .st-brand b{color:#0f172a}
+.st-feats svg{color:#d97706}
+.st-demo-ph{border-color:#0f172a;box-shadow:0 20px 40px rgba(15,23,42,.15)}
+.st-demo-code{background:#0f172a;border-color:#0f172a}
+.st-auth{box-shadow:0 30px 80px rgba(15,23,42,.12);border:1px solid #e2e8f0}

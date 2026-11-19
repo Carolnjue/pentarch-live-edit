@@ -114,7 +114,7 @@
 		hero.innerHTML = '<div class="st-wh-in"><div class="st-brand lg">' + (S.logo ? '<img src="' + esc(S.logo) + '" alt="">' : '<span class="st-mark">' + icon('code', 20) + '</span>') + '<b>' + esc(S.name) + '</b></div>' +
 			'<h1>Learn web design by <span>building real websites</span>, right on your phone.</h1>' +
 			'<p>No laptop needed. Short practical lessons, a professional page builder, and real projects you can show clients.</p>' +
-			'<ul class="st-feats"><li>' + icon('code', 18) + 'Write real HTML and CSS with instant preview</li><li>' + icon('rows', 18) + 'Drag-and-drop builder with Layers, like Pagelayer</li><li>' + icon('users', 18) + 'Join your class, submit work, get feedback</li><li>' + icon('award', 18) + 'Earn a certificate from ' + esc(S.org) + '</li></ul>' +
+			'<ul class="st-feats"><li>' + icon('star', 18) + 'Design Lab: watch pros build 54 sections, then build them yourself</li><li>' + icon('code', 18) + 'Write real HTML and CSS with instant preview</li><li>' + icon('rows', 18) + 'Drag-and-drop builder with Layers, like Pagelayer</li><li>' + icon('users', 18) + 'Join your class, submit work, get feedback</li><li>' + icon('award', 18) + 'Earn a certificate from ' + esc(S.org) + '</li></ul>' +
 			'<div class="st-demo" aria-hidden="true"><div class="st-demo-ph"><i></i><div class="st-demo-c"><b></b><s></s><s></s><em></em></div></div><div class="st-demo-code"><span>&lt;h1&gt;</span>Mama Njeri\'s Kitchen<span>&lt;/h1&gt;</span><br><span>&lt;a</span> href="tel:..."<span>&gt;</span>Call<span>&lt;/a&gt;</span></div></div></div>';
 		w.appendChild(hero);
 		var card = h('section', { class: 'st-auth' });
