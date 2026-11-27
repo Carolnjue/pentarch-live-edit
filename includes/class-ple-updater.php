@@ -118,6 +118,7 @@ final class PLE_Updater {
 			$source = $target;
 		}
 		$live = trailingslashit( WP_PLUGIN_DIR ) . self::SLUG . '/';
+		self::legacy_from_v1( $live, $source );
 		foreach ( self::KEEP as $f ) {
 			$new = $source . $f;
 			$old = $live . $f;
@@ -126,6 +127,27 @@ final class PLE_Updater {
 			}
 		}
 		return $source;
+	}
+
+	/**
+	 * A site still on Live Edit 1.x keeps its core in the main plugin file.
+	 * Turn that file into includes/class-ple-legacy.php so Live Blocks and
+	 * site-wide zones keep working after the update.
+	 */
+	public static function legacy_from_v1( $live, $source ) {
+		$main = $live . 'pentarch-live-edit.php';
+		$dest = trailingslashit( $source ) . 'includes/class-ple-legacy.php';
+		if ( file_exists( $live . 'includes/class-ple-legacy.php' ) || ! file_exists( $main ) ) {
+			return;
+		}
+		$code = (string) file_get_contents( $main ); // phpcs:ignore
+		if ( false === strpos( $code, 'class Pentarch_Live_Edit' ) || false !== strpos( $code, 'class-ple2.php' ) ) {
+			return;
+		}
+		$code = preg_replace( '/^(\s*\*\s*)Plugin Name:.*$/mi', '$1Pentarch Live Edit 1.x core (converted from the 1.x main file)', $code, 1 );
+		$code = str_replace( 'plugin_dir_url( __FILE__ )', 'plugin_dir_url( dirname( __FILE__ ) )', $code );
+		$code = str_replace( 'plugin_dir_path( __FILE__ )', 'plugin_dir_path( dirname( __FILE__ ) )', $code );
+		file_put_contents( $dest, $code ); // phpcs:ignore
 	}
 
 	public static function auto( $update, $item ) {
