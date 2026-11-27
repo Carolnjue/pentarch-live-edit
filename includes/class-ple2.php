@@ -309,7 +309,7 @@ final class PLE2 {
 	 * hand-written HTML as sections, rows, columns and widgets.
 	 */
 	public static function native_source( $post ) {
-		$content = (string) $post->post_content;
+		$content = self::from_pagelayer( (string) $post->post_content, $post );
 		$blocks  = array();
 		if ( preg_match_all( '/\[ple\s[^\]]*\]/', $content, $m ) ) {
 			foreach ( array_unique( $m[0] ) as $code ) {
@@ -320,6 +320,79 @@ final class PLE2 {
 			}
 		}
 		return array( 'content' => $content, 'blocks' => (object) $blocks );
+	}
+
+	/**
+	 * Pages built with Pagelayer store their markup as Pagelayer blocks, with
+	 * Custom HTML widgets kept as JSON text. Turn them back into real HTML so
+	 * the builder imports the page itself, not the escaped storage format.
+	 */
+	public static function from_pagelayer( $content, $post = null ) {
+		if ( preg_match( '/^\s*<!-- wp:html -->\s*(.*?)\s*<!-- \/wp:html -->\s*$/s', $content, $m ) && false === strpos( $m[1], '<!-- wp:' ) ) {
+			return $m[1];
+		}
+		if ( false === strpos( $content, '<!-- wp:pagelayer/' ) ) {
+			return $content;
+		}
+		$plain = true;
+		$html  = self::pagelayer_html( parse_blocks( $content ), $plain );
+		if ( $plain && '' !== trim( $html ) ) {
+			return trim( $html );
+		}
+		/* Other Pagelayer widgets: use the page as Pagelayer renders it. */
+		remove_filter( 'the_content', array( __CLASS__, 'the_content' ), 1000 );
+		remove_filter( 'the_content', array( __CLASS__, 'canvas_content' ), 99999 );
+		$prev = isset( $GLOBALS['post'] ) ? $GLOBALS['post'] : null;
+		if ( $post ) {
+			$GLOBALS['post'] = $post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride
+			setup_postdata( $post );
+		}
+		$out = apply_filters( 'the_content', $content ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals
+		if ( $post ) {
+			$GLOBALS['post'] = $prev; // phpcs:ignore WordPress.WP.GlobalVariablesOverride
+			wp_reset_postdata();
+		}
+		add_filter( 'the_content', array( __CLASS__, 'the_content' ), 1000 );
+		add_filter( 'the_content', array( __CLASS__, 'canvas_content' ), 99999 );
+		return '' !== trim( (string) $out ) ? (string) $out : $content;
+	}
+
+	private static function pagelayer_html( $blocks, &$plain ) {
+		$out = '';
+		foreach ( (array) $blocks as $b ) {
+			$name = (string) ( $b['blockName'] ?? '' );
+			if ( '' === $name ) {
+				$out .= (string) ( $b['innerHTML'] ?? '' );
+				continue;
+			}
+			if ( 'pagelayer/pl_post_props' === $name ) {
+				continue;
+			}
+			if ( in_array( $name, array( 'pagelayer/pl_row', 'pagelayer/pl_inner_row', 'pagelayer/pl_col' ), true ) ) {
+				$out .= self::pagelayer_html( $b['innerBlocks'] ?? array(), $plain );
+				continue;
+			}
+			if ( in_array( $name, array( 'pagelayer/pl_wp_custom_html', 'pagelayer/pl_html', 'pagelayer/pl_embed' ), true ) ) {
+				$raw  = trim( (string) ( $b['innerHTML'] ?? '' ) );
+				$data = json_decode( $raw, true );
+				if ( is_array( $data ) && isset( $data['content'] ) ) {
+					$out .= (string) $data['content'];
+				} elseif ( isset( $b['attrs']['content'] ) ) {
+					$out .= (string) $b['attrs']['content'];
+				} elseif ( isset( $b['attrs']['data'] ) ) {
+					$out .= (string) $b['attrs']['data'];
+				} else {
+					$out .= $raw;
+				}
+				continue;
+			}
+			if ( 0 === strpos( $name, 'core/' ) ) {
+				$out .= render_block( $b );
+				continue;
+			}
+			$plain = false;
+		}
+		return $out;
 	}
 
 	private static function block_from_shortcode( $code ) {
@@ -547,6 +620,10 @@ final class PLE2 {
 		}
 		$page = get_post( $id );
 		$new  = isset( $nat['content'] ) ? (string) $nat['content'] : $page->post_content;
+		/* A page coming over from Pagelayer: keep its HTML in an HTML block so WordPress does not add <p> tags to it. */
+		if ( isset( $nat['content'] ) && ( false !== strpos( $page->post_content, '<!-- wp:pagelayer/' ) || 0 === strpos( ltrim( $page->post_content ), '<!-- wp:html -->' ) ) && false === strpos( $new, '<!-- wp:' ) ) {
+			$new = "<!-- wp:html -->\n" . $new . "\n<!-- /wp:html -->";
+		}
 		$upd  = array( 'ID' => $id );
 		if ( $new !== $page->post_content ) {
 			$upd['post_content'] = $new;
